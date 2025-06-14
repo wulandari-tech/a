@@ -1,0 +1,119 @@
+<%- include('partials/header', { pageTitle: 'Live Chat Support' }) %>
+
+<style>
+    .chat-page-container {
+        display: flex;
+        flex-direction: column;
+        height: calc(100vh - 120px); /* Adjust based on navbar and footer height */
+        max-width: 800px;
+        margin: 1rem auto;
+        background-color: var(--card-bg-color);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--box-shadow);
+        overflow: hidden;
+    }
+    .chat-page-header {
+        background: var(--gradient-title-bar);
+        color: white;
+        padding: 1rem 1.5rem;
+        font-size: 1.2rem;
+        font-weight: 600;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .chat-page-header i { margin-right: 10px; }
+    .chat-page-messages {
+        flex-grow: 1;
+        padding: 1.5rem;
+        overflow-y: auto;
+        background-color: #f4f7f9;
+        color: var(--text-color);
+    }
+    .chat-page-messages .message {
+        margin-bottom: 1rem;
+        padding: 0.6rem 1rem;
+        border-radius: 14px;
+        max-width: 80%;
+        word-wrap: break-word;
+        line-height: 1.5;
+        font-size: 0.95rem;
+    }
+    .chat-page-messages .message.sent {
+        background-color: var(--primary-color);
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    .chat-page-messages .message.received {
+        background-color: #e9ecef;
+        color: var(--text-color);
+        align-self: flex-start;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+    }
+    .chat-page-messages .message .sender {
+        font-weight: bold;
+        font-size: 0.8rem;
+        display: block;
+        margin-bottom: 4px;
+        color: #6c757d;
+    }
+    .chat-page-messages .message.sent .sender { color: rgba(255,255,255,0.85); }
+    .chat-page-messages .message .timestamp {
+        font-size: 0.75rem;
+        color: #888;
+        display: block;
+        margin-top: 5px;
+        text-align: right;
+    }
+    .chat-page-messages .message.sent .timestamp { color: rgba(255,255,255,0.7); }
+    .chat-page-input-form {
+        display: flex;
+        padding: 1rem;
+        border-top: 1px solid var(--border-color);
+        background-color: #fff;
+    }
+    .chat-page-input-form input {
+        border-radius: var(--border-radius);
+        padding: 0.9rem 1.2rem;
+    }
+    .chat-page-input-form button {
+        margin-left: 0.75rem;
+        padding: 0.9rem 1.5rem;
+    }
+    @media (max-width: 768px) {
+        .chat-page-container {
+            height: calc(100vh - 100px);
+            margin: 0.5rem;
+            border-radius: var(--border-radius);
+        }
+        .chat-page-messages { padding: 1rem; }
+        .chat-page-input-form { padding: 0.75rem; }
+    }
+</style>
+
+<div class="chat-page-container">
+    <div class="chat-page-header">
+        <span><i class="fas fa-comments"></i> Live Chat dengan <%= storeName %></span>
+        <span id="chatConnectionStatus" class="badge bg-light text-dark" style="font-size: 0.8rem;">Menyambungkan...</span>
+    </div>
+    <div class="chat-page-messages" id="chatMessages">
+        <!-- Pesan sambutan default -->
+        <div class="message received" id="welcomeMessage">
+            <span class="sender">Admin <%= storeName %></span>
+            Halo! Ada yang bisa kami bantu? Silakan ketik pertanyaan Anda di bawah.
+            <span class="timestamp"><%= new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute:'2-digit' }) %></span>
+        </div>
+    </div>
+    <form class="chat-page-input-form" id="chatFormPage">
+        <input type="text" class="form-control" id="messageInputPage" placeholder="Ketik pesan Anda..." autocomplete="off" required>
+        <button type="submit" class="btn btn-primary" id="sendMessageBtnPage">
+            <i class="fas fa-paper-plane"></i> <span class="d-none d-sm-inline">Kirim</span>
+        </button>
+    </form>
+</div>
+
+<script src="/js/chat_page.js"></script>
+<%- include('partials/footer') %>

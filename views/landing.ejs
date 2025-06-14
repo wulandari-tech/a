@@ -1,0 +1,152 @@
+<%- include('partials/header', { pageTitle: 'Selamat Datang' }) %>
+
+<style>
+    body { padding-top: 0; }
+    .navbar.fixed-top.landing-nav {
+        background-color: transparent !important;
+        box-shadow: none;
+        padding-top: 1rem;
+        padding-bottom: 1rem;
+        transition: background-color 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    }
+    .navbar.fixed-top.landing-nav.scrolled {
+        background-color: var(--dark-color) !important;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.15);
+    }
+    .landing-hero-wrapper {
+        position: relative;
+        overflow: hidden; /* Penting untuk parallax jika background adalah child */
+        background-color: var(--dark-color); /* Fallback jika gambar tidak load */
+    }
+    .landing-hero-bg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 120%; /* Lebih tinggi untuk efek parallax */
+        background-image: url('/images/digital_illustration_bg.jpg'); /* Ganti dengan gambar background parallax Anda */
+        background-size: cover;
+        background-position: center center;
+        z-index: 1;
+        transition: transform 0.8s cubic-bezier(0.25, 0.1, 0.25, 1); /* Transisi halus */
+    }
+    .landing-hero {
+        position: relative;
+        z-index: 2;
+        padding-top: 120px;
+        padding-bottom: 80px;
+        min-height: 85vh;
+        display: flex;
+        align-items: center;
+        background-color: rgba(13, 2, 26, 0.5); /* Overlay gelap agar teks lebih terbaca */
+    }
+    .feature-card {
+        background-color: var(--card-bg-color);
+        border-radius: var(--border-radius);
+        padding: 2rem;
+        box-shadow: var(--box-shadow);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+        height: 100%;
+    }
+    .feature-card:hover {
+        transform: translateY(-10px);
+        box-shadow: 0 1rem 2rem rgba(0,0,0,0.1);
+    }
+    .cta-section {
+        background-color: var(--primary-light);
+    }
+</style>
+
+<div class="landing-hero-wrapper">
+    <div class="landing-hero-bg" id="landingHeroBg"></div>
+    <div class="landing-hero">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-7 text-center text-lg-start" data-aos="fade-right">
+                    <h1 class="display-4 fw-bolder mb-4"><%= storeName %>: Solusi Digital Terlengkap Anda</h1>
+                    <p class="lead fw-normal text-white-50 mb-4">
+                        Temukan berbagai produk digital, layanan PPOB, top up game favorit, hingga kebutuhan server VPS dan panel game dengan mudah, cepat, dan aman.
+                    </p>
+                    <div class="d-grid gap-3 d-sm-flex justify-content-sm-center justify-content-lg-start">
+                        <a class="btn btn-primary btn-lg px-4 me-sm-3" href="/products"><i class="fas fa-store"></i> Jelajahi Toko</a>
+                        <a class="btn btn-outline-light btn-lg px-4" href="/layanan"><i class="fas fa-bolt"></i> Layanan PPOB</a>
+                    </div>
+                </div>
+                <div class="col-lg-5 d-none d-lg-block" data-aos="fade-left" data-aos-delay="200">
+                    <img src="/images/digital_illustration.png" alt="Ilustrasi Digital" class="img-fluid" onerror="this.style.display='none'">
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<section class="section-padding bg-white">
+    <div class="container">
+        <div class="text-center mb-5">
+            <h2 class="fw-bolder section-title-underline">Mengapa Memilih <%= storeName %>?</h2>
+            <p class="lead text-muted">Kami menawarkan lebih dari sekadar produk.</p>
+        </div>
+        <div class="row gx-lg-5">
+            <div class="col-lg-4 mb-4 mb-lg-0" data-aos="fade-up">
+                <div class="feature-card text-center">
+                    <div class="feature-icon"><i class="fas fa-rocket"></i></div>
+                    <h4 class="fw-semibold">Cepat & Mudah</h4>
+                    <p class="text-muted">Proses transaksi instan dan antarmuka yang ramah pengguna untuk kemudahan Anda.</p>
+                </div>
+            </div>
+            <div class="col-lg-4 mb-4 mb-lg-0" data-aos="fade-up" data-aos-delay="100">
+                <div class="feature-card text-center">
+                    <div class="feature-icon"><i class="fas fa-shield-alt"></i></div>
+                    <h4 class="fw-semibold">Aman & Terpercaya</h4>
+                    <p class="text-muted">Keamanan transaksi Anda adalah prioritas kami dengan sistem pembayaran terverifikasi.</p>
+                </div>
+            </div>
+            <div class="col-lg-4" data-aos="fade-up" data-aos-delay="200">
+                <div class="feature-card text-center">
+                    <div class="feature-icon"><i class="fas fa-tags"></i></div>
+                    <h4 class="fw-semibold">Harga Kompetitif</h4>
+                    <p class="text-muted">Dapatkan penawaran terbaik untuk semua produk dan layanan, termasuk harga reseller.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<section class="section-padding cta-section">
+    <div class="container text-center">
+        <h2 class="fw-bolder text-primary" data-aos="zoom-in">Siap Memulai?</h2>
+        <p class="lead text-muted mb-4" data-aos="zoom-in" data-aos-delay="100">
+            Daftar sekarang dan nikmati kemudahan bertransaksi di <%= storeName %>.
+        </p>
+        <a href="/register" class="btn btn-success btn-lg px-5 py-3" data-aos="zoom-in" data-aos-delay="200"><i class="fas fa-user-plus"></i> Daftar Gratis</a>
+    </div>
+</section>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const navbar = document.querySelector('.navbar.fixed-top');
+        const landingHeroBg = document.getElementById('landingHeroBg');
+
+        if (navbar && window.location.pathname === '/') {
+            navbar.classList.add('landing-nav');
+            window.addEventListener('scroll', () => {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('scrolled');
+                } else {
+                    navbar.classList.remove('scrolled');
+                }
+
+                if (landingHeroBg) {
+                    let scrollPosition = window.pageYOffset;
+                    landingHeroBg.style.transform = 'translateY(' + scrollPosition * 0.3 + 'px)';
+                }
+            });
+        }
+         if (landingHeroBg && window.pageYOffset > 0) { // Initial position if already scrolled
+            let scrollPosition = window.pageYOffset;
+            landingHeroBg.style.transform = 'translateY(' + scrollPosition * 0.3 + 'px)';
+        }
+    });
+</script>
+
+<%- include('partials/footer') %>

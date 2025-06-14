@@ -1,0 +1,268 @@
+<%- include('../partials/header') %>
+
+<div class="container py-md-5">
+    <h2 class="mb-4 fw-bold"><i class="fas fa-hand-holding-usd me-2"></i>Formulir Deposit Saldo</h2>
+    <hr class="mb-5">
+    <div class="row g-4">
+        <div class="col-lg-7" data-aos="fade-right">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    <% if(paymentMethods && paymentMethods.length > 0) { %>
+                    <form action="/user/deposit" method="POST" class="needs-validation" novalidate>
+                        <div class="form-floating mb-4">
+                            <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="1000" value="10000" placeholder="Jumlah Deposit" required>
+                            <label for="amount"><i class="fas fa-coins me-2"></i>Jumlah Deposit (Minimal Rp 1.000)</label>
+                            <div class="invalid-feedback">Jumlah minimal Rp 1.000 dan harus angka.</div>
+                        </div>
+                        <div class="form-floating mb-3">
+                            <select class="form-select form-select-lg" id="method_code" name="method_code" required>
+                                <option value="" disabled <%= paymentMethods.length === 0 ? 'selected' : '' %>>Pilih Metode Pembayaran</option>
+                                <% paymentMethods.forEach((pm, index) => { %>
+                                    <option value="<%= pm.metode %>" 
+                                            data-name="<%= pm.name %>"
+                                            data-min="<%= pm.minimum %>" 
+                                            data-max="<%= pm.maximum %>" 
+                                            data-fee-percent="<%= pm.percentage_fee || 0 %>"
+                                            data-fee-flat="<%= pm.flat_fee || 0 %>" 
+                                            data-fee-by-customer="<%= pm.fee_by_customer !== undefined ? pm.fee_by_customer.toString() : 'true' %>"
+                                            data-logo="<%= pm.logo_image_url || '/images/default_payment.png' %>"
+                                            data-type="<%= pm.type || 'unknown' %>"
+                                            data-source="<%= pm.source || 'unknown' %>"
+                                            <%= (index === 0 && pm.source === 'orkut_dynamic') ? 'selected' : '' %>>
+                                        <%= pm.name %>
+                                    </option>
+                                <% }) %>
+                                <option value="midtrans_gateway"
+                                        data-name="Midtrans (VA, E-Wallet, CC, etc.)"
+                                        data-min="10000"
+                                        data-max="50000000"
+                                        data-fee-percent="0" 
+                                        data-fee-flat="0"    
+                                        data-fee-by-customer="true" 
+                                        data-logo="/images/midtrans_logo.png" 
+                                        data-type="gateway"
+                                        data-source="midtrans">
+                                    Midtrans (VA, E-Wallet, Kartu Kredit, etc.)
+                                </option>
+                            </select>
+                            <label for="method_code"><i class="fas fa-credit-card me-2"></i>Metode Pembayaran</label>
+                            <div class="invalid-feedback">Metode pembayaran wajib dipilih.</div>
+                        </div>
+                        <div id="payment-details" class="alert alert-light border p-3 mb-4" style="display: none;">
+                            <div class="d-flex align-items-center mb-2">
+                                <img id="method-logo" src="" alt="Metode" style="width: 35px; height: auto; margin-right: 12px; border-radius: 4px; object-fit:contain; background-color: white; padding:2px; border: 1px solid #ddd;">
+                                <strong id="method-name-detail" class="fs-6"></strong>
+                            </div>
+                            <span>Minimal: <span id="min-amount" class="fw-bold"></span></span> |
+                            <span>Maksimal: <span id="max-amount" class="fw-bold"></span></span><br>
+                            <span>Biaya Admin Provider: <span id="fee-provider-info" class="fw-bold"></span></span><br>
+                            <span id="fee-pg-info-container" style="display:none;">Biaya Payment Gateway: <span id="fee-pg-info" class="fw-bold"></span><br></span>
+                            <hr class="my-2">
+                            <p class="mb-1">Estimasi Saldo Diterima: <strong id="get-balance-estimate" class="text-success fs-5"></strong></p>
+                            <p class="mb-0">Estimasi Total Bayar: <strong id="total-pay-estimate" class="text-danger fs-5"></strong></p>
+                        </div>
+                        <div class="d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold"><i class="fas fa-arrow-circle-right me-2"></i>Lanjutkan Pembayaran</button>
+                        </div>
+                    </form>
+                    <% } else { %>
+                        <div class="alert alert-warning text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <h5 class="alert-heading">Metode Pembayaran Tidak Tersedia</h5>
+                            <p>Saat ini tidak ada metode pembayaran yang aktif. Silakan hubungi admin untuk informasi lebih lanjut.</p>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5" data-aos="fade-left" data-aos-delay="100">
+            <div class="card shadow-sm deposit-method-list border-0">
+                <div class="card-header bg-primary-light">
+                    <h5 class="mb-0 text-primary fw-semibold"><i class="fas fa-info-circle me-2"></i>Informasi Metode Pembayaran</h5>
+                </div>
+                <div class="card-body p-0">
+                    <% if(paymentMethods && paymentMethods.length > 0) { %>
+                        <ul class="list-group list-group-flush">
+                        <% paymentMethods.forEach(pm => { %>
+                            <li class="list-group-item p-3">
+                                <div class="d-flex align-items-center">
+                                    <img src="<%= pm.logo_image_url || '/images/default_payment.png' %>" alt="<%= pm.name %>" class="payment-logo">
+                                    <div>
+                                        <strong class="d-block"><%= pm.name %> <span class="badge bg-secondary fs-07"><%= pm.type %></span></strong>
+                                        <small class="text-muted d-block">
+                                            Min: Rp <%= parseInt(pm.minimum || 0).toLocaleString('id-ID') %> | Max: Rp <%= parseInt(pm.maximum || 0).toLocaleString('id-ID') %>
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            Fee: <%= parseFloat(pm.percentage_fee || 0).toFixed(2) %>% <% if(pm.flat_fee && parseFloat(pm.flat_fee) > 0) { %> + Rp <%= parseInt(pm.flat_fee).toLocaleString('id-ID') %> <% } %>
+                                            (<%= pm.fee_by_customer !== undefined && pm.fee_by_customer.toString() === 'true' ? 'Customer' : 'Merchant' %>)
+                                        </small>
+                                    </div>
+                                    <span class="ms-auto badge bg-<%= pm.status === 'active' ? 'success' : 'danger' %> rounded-pill"><%= pm.status %></span>
+                                </div>
+                            </li>
+                        <% }) %>
+                         <li class="list-group-item p-3">
+                                <div class="d-flex align-items-center">
+                                    <img src="/images/midtrans_logo.png" alt="Midtrans" class="payment-logo">
+                                    <div>
+                                        <strong class="d-block">Midtrans (VA, E-Wallet, CC, etc.) <span class="badge bg-secondary fs-07">gateway</span></strong>
+                                        <small class="text-muted d-block">
+                                            Min: Rp 10.000 | Max: Rp 50.000.000
+                                        </small>
+                                        <small class="text-muted d-block">
+                                            Fee: Bervariasi (Customer)
+                                        </small>
+                                    </div>
+                                    <span class="ms-auto badge bg-success rounded-pill">active</span>
+                                </div>
+                            </li>
+                        </ul>
+                    <% } else { %>
+                        <p class="text-center text-muted p-3">Tidak ada informasi metode pembayaran yang tersedia saat ini.</p>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const methodSelect = document.getElementById('method_code');
+        const paymentDetailsDiv = document.getElementById('payment-details');
+        const minAmountSpan = document.getElementById('min-amount');
+        const maxAmountSpan = document.getElementById('max-amount');
+        const feeProviderInfoSpan = document.getElementById('fee-provider-info');
+        const feePgInfoContainer = document.getElementById('fee-pg-info-container');
+        const feePgInfoSpan = document.getElementById('fee-pg-info');
+        const getBalanceEstimateSpan = document.getElementById('get-balance-estimate');
+        const totalPayEstimateSpan = document.getElementById('total-pay-estimate');
+        const amountInput = document.getElementById('amount');
+        const methodLogoImg = document.getElementById('method-logo');
+        const methodNameDetailSpan = document.getElementById('method-name-detail');
+
+        function formatCurrency(num) {
+            return 'Rp ' + (num || 0).toLocaleString('id-ID', {minimumFractionDigits:0, maximumFractionDigits:0});
+        }
+
+        function calculateAndDisplayFees() {
+            if (!methodSelect || !methodSelect.value) {
+                if(paymentDetailsDiv) paymentDetailsDiv.style.display = 'none';
+                return;
+            }
+            const selectedOption = methodSelect.options[methodSelect.selectedIndex];
+            if (!selectedOption || !selectedOption.dataset || !selectedOption.dataset.name) { 
+                if(paymentDetailsDiv) paymentDetailsDiv.style.display = 'none';
+                return;
+            }
+
+            const depositAmount = parseFloat(amountInput.value) || 0;
+
+            const min = parseInt(selectedOption.dataset.min || 0);
+            const max = parseInt(selectedOption.dataset.max || 99999999);
+            const feePercent = parseFloat(selectedOption.dataset.feePercent || 0);
+            const feeFlat = parseFloat(selectedOption.dataset.feeFlat || 0);
+            const feeByCustomer = selectedOption.dataset.feeByCustomer === 'true';
+            const logo = selectedOption.dataset.logo;
+            const name = selectedOption.dataset.name;
+            const source = selectedOption.dataset.source;
+
+
+            if(minAmountSpan) minAmountSpan.textContent = formatCurrency(min);
+            if(maxAmountSpan) maxAmountSpan.textContent = formatCurrency(max);
+            if(methodLogoImg) methodLogoImg.src = logo || '/images/default_payment.png';
+            if(methodNameDetailSpan) methodNameDetailSpan.textContent = name;
+
+            let feeProviderAmount = 0;
+            let feePgAmount = 0;
+            let totalToPay = depositAmount;
+            let getBalance = depositAmount;
+
+            if (source === 'orkut_dynamic') {
+                const orkutFeePercentEnv = parseFloat(selectedOption.dataset.feePercent || "<%= process.env.ORKUT_QRIS_FEE_PERCENTAGE_FOR_DEPOSIT || process.env.ORKUT_QRIS_FEE_PERCENTAGE || 0.7 %>");
+                feePgAmount = depositAmount * orkutFeePercentEnv / 100;
+                if(feePgInfoContainer) feePgInfoContainer.style.display = 'block';
+                
+                if (feeByCustomer) { 
+                    totalToPay = depositAmount + feePgAmount;
+                    getBalance = depositAmount;
+                } else { 
+                    totalToPay = depositAmount;
+                    getBalance = depositAmount - feePgAmount;
+                }
+            } else if (source === 'forestapi' || source === 'midtrans') {
+                feeProviderAmount = (depositAmount * feePercent / 100) + feeFlat;
+                if(feePgInfoContainer) feePgInfoContainer.style.display = source === 'midtrans' ? 'block' : 'none';
+                if (source === 'midtrans') {
+                     feePgInfoSpan.textContent = "Bervariasi (cek saat checkout Midtrans)";
+                }
+
+                if(feeByCustomer) {
+                    totalToPay = depositAmount + feeProviderAmount;
+                    getBalance = depositAmount;
+                } else {
+                    totalToPay = depositAmount;
+                    getBalance = depositAmount - feeProviderAmount;
+                }
+            } else {
+                if(feePgInfoContainer) feePgInfoContainer.style.display = 'none';
+            }
+            
+            if(feeProviderInfoSpan) feeProviderInfoSpan.textContent = formatCurrency(feeProviderAmount);
+            if(feePgInfoSpan && source !== 'midtrans') feePgInfoSpan.textContent = formatCurrency(feePgAmount);
+            if(getBalanceEstimateSpan) getBalanceEstimateSpan.textContent = formatCurrency(getBalance < 0 ? 0 : getBalance);
+            if(totalPayEstimateSpan) totalPayEstimateSpan.textContent = formatCurrency(totalToPay);
+
+            if(paymentDetailsDiv) paymentDetailsDiv.style.display = 'block';
+            
+            if(amountInput) {
+                amountInput.min = min;
+                amountInput.max = max;
+
+                if (document.activeElement === amountInput) {
+                    if (depositAmount !== 0 && depositAmount < min && amountInput.value !== "") { 
+                         amountInput.value = min; 
+                         setTimeout(calculateAndDisplayFees, 10); 
+                    } else if (depositAmount > max && amountInput.value !== "") {
+                        amountInput.value = max;
+                        setTimeout(calculateAndDisplayFees, 10);
+                    }
+                }
+            }
+        }
+
+        if(methodSelect) {
+            methodSelect.addEventListener('change', calculateAndDisplayFees);
+            if (methodSelect.value) {
+                calculateAndDisplayFees();
+            } else if (methodSelect.options.length > 1 && methodSelect.options[0].disabled) {
+                const orkutOption = Array.from(methodSelect.options).find(opt => opt.value === 'orkut_qris_dynamic');
+                if (orkutOption) {
+                    methodSelect.value = 'orkut_qris_dynamic';
+                } else if (methodSelect.options[1] && methodSelect.options[1].value) {
+                     methodSelect.value = methodSelect.options[1].value;
+                }
+                if(methodSelect.value) calculateAndDisplayFees();
+            }
+        }
+        if(amountInput) amountInput.addEventListener('input', calculateAndDisplayFees);
+        
+    });
+</script>
+
+<%- include('../partials/footer') %>

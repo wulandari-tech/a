@@ -1,0 +1,226 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Layanan Sosial Media</h1>
+        <p class="lead text-muted">Tingkatkan interaksi sosial media Anda.</p>
+        <div class="btn-group mt-2" role="group" aria-label="Pilih Server SMM">
+            <a href="/layanan/sosmed?server=sosmed" class="btn btn-sm <%= currentServer === 'sosmed' ? 'btn-primary' : 'btn-outline-primary' %>">Server 1</a>
+            <a href="/layanan/sosmed?server=sosmed2" class="btn btn-sm <%= currentServer === 'sosmed2' ? 'btn-primary' : 'btn-outline-primary' %>">Server 2</a>
+            <a href="/layanan/sosmed?server=sosmed3" class="btn btn-sm <%= currentServer === 'sosmed3' ? 'btn-primary' : 'btn-outline-primary' %>">Server 3</a>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-header bg-info text-white">
+                    <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Kategori Layanan SMM</h5>
+                </div>
+                <div class="list-group list-group-flush" id="categoryFilterSosmed">
+                    <a href="#" class="list-group-item list-group-item-action active" data-filter-kategori="all">
+                        <i class="fas fa-list-ul me-2"></i>Semua Kategori
+                    </a>
+                    <% Object.keys(categories).sort().forEach(kategori => { %>
+                        <a href="#" class="list-group-item list-group-item-action" data-filter-kategori="<%= kategori.toLowerCase().replace(/\s+/g, '-') %>">
+                            <i class="fas fa-tag me-2"></i><%= kategori %>
+                            <span class="badge bg-secondary rounded-pill float-end"><%= categories[kategori].length %></span>
+                        </a>
+                    <% }); %>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <form id="sosmedOrderForm" class="needs-validation" novalidate>
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control form-control-lg" id="target_id_sosmed" name="target_id_sosmed" placeholder="Link / Username Tujuan" required>
+                    <label for="target_id_sosmed">Link / Username Tujuan</label>
+                    <div class="invalid-feedback">Target (Link/Username) wajib diisi.</div>
+                </div>
+                 <div class="form-floating mb-3" id="quantitySosmedContainer" style="display: none;">
+                    <input type="number" class="form-control form-control-lg" id="quantity_smm" name="quantity_smm" placeholder="Jumlah" min="1">
+                    <label for="quantity_smm">Jumlah Pesanan</label>
+                    <div class="invalid-feedback" id="quantityFeedback">Jumlah wajib diisi dan sesuai batas min/max layanan.</div>
+                </div>
+
+
+                <div id="sosmedServiceList" class="row row-cols-1 row-cols-sm-2 g-3">
+                    <% if (rawServiceData && rawServiceData.length > 0) { %>
+                        <% rawServiceData.forEach(item => { %>
+                            <div class="col service-item-smm" data-kategori="<%= (item.kategori || 'Lainnya').toLowerCase().replace(/\s+/g, '-') %>"
+                                 data-min="<%= item.min %>" data-max="<%= item.max %>">
+                                <label class="card h-100 product-select-card">
+                                    <input type="radio" name="selected_sosmed_product" class="d-none" 
+                                           value="<%= item.sid %>"
+                                           data-name="<%= item.layanan %>" 
+                                           data-price="<%= item.harga %>"
+                                           data-catatan="<%= item.catatan || '' %>"
+                                           data-min="<%= item.min %>"
+                                           data-max="<%= item.max %>"
+                                           required>
+                                    <div class="card-body text-center d-flex flex-column justify-content-center p-3">
+                                        <h6 class="card-title small fw-bold mb-1"><%= item.layanan %></h6>
+                                        <p class="card-text fw-bolder text-info mb-1 fs-5">Rp <%= parseInt(item.harga).toLocaleString('id-ID') %> <small class="text-muted">/1000</small></p>
+                                        <small class="text-muted note-text d-block mb-1" style="font-size: 0.7rem;">Min: <%= item.min %> / Max: <%= item.max %></small>
+                                        <small class="text-muted note-text d-block" style="font-size: 0.7rem;"><%= item.catatan %></small>
+                                    </div>
+                                </label>
+                            </div>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-12"><p class="alert alert-warning">Tidak ada layanan sosial media yang tersedia untuk server ini saat ini.</p></div>
+                    <% } %>
+                </div>
+                 <div class="text-center mt-4 sticky-bottom bg-white py-3 shadow-top" id="sosmedCheckoutButtonContainer" style="display:none;">
+                    <p id="selectedSosmedProductInfo" class="mb-2 fw-bold fs-5"></p>
+                    <p id="estimatedSosmedPriceInfo" class="mb-2 fw-bold fs-6 text-success"></p>
+                    <button type="button" id="proceedToCheckoutSosmedBtn" class="btn btn-success btn-lg">
+                        <i class="fas fa-shield-alt me-2"></i> Pesan Sekarang
+                    </button>
+                    <p id="sosmedSelectionError" class="text-danger mt-2 small" style="display:none;">Silakan masukkan Target, Jumlah (jika ada), dan pilih layanan.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<style>
+.product-select-card { cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s ease-in-out, transform 0.2s ease-in-out; }
+.product-select-card:hover { border-color: var(--info-hover-color, #0dcaf0); transform: translateY(-3px); }
+.product-select-card input[type="radio"]:checked + .card-body {
+    background-color: var(--info-light, #cff4fc);
+    border-color: var(--info-color, #0dcaf0);
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-info-rgb), 0.3);
+}
+.shadow-top { box-shadow: 0 -0.35rem 0.75rem rgba(0,0,0,0.08); border-top: 1px solid #eee; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const targetIdInput = document.getElementById('target_id_sosmed');
+    const quantityInput = document.getElementById('quantity_smm');
+    const quantityContainer = document.getElementById('quantitySosmedContainer');
+    const quantityFeedback = document.getElementById('quantityFeedback');
+    const productRadios = document.querySelectorAll('input[name="selected_sosmed_product"]');
+    const checkoutButtonContainer = document.getElementById('sosmedCheckoutButtonContainer');
+    const selectedProductInfo = document.getElementById('selectedSosmedProductInfo');
+    const estimatedPriceInfo = document.getElementById('estimatedSosmedPriceInfo');
+    const proceedBtn = document.getElementById('proceedToCheckoutSosmedBtn');
+    const selectionError = document.getElementById('sosmedSelectionError');
+    const categoryFilters = document.querySelectorAll('#categoryFilterSosmed .list-group-item-action');
+    const serviceItems = document.querySelectorAll('#sosmedServiceList .service-item-smm');
+    let selectedProductData = null;
+
+    function filterServices() {
+        const activeKategoriFilter = document.querySelector('#categoryFilterSosmed .list-group-item-action.active').dataset.filterKategori;
+        serviceItems.forEach(item => {
+            const itemKategori = item.dataset.kategori;
+            const showForKategori = activeKategoriFilter === 'all' || itemKategori === activeKategoriFilter;
+            item.style.display = showForKategori ? '' : 'none';
+        });
+    }
+
+    categoryFilters.forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            categoryFilters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            filterServices();
+            validateSMMSelection();
+        });
+    });
+
+    function calculateEstimatedPrice() {
+        if (selectedProductData && quantityInput.value) {
+            const qty = parseInt(quantityInput.value);
+            const pricePerThousand = selectedProductData.price;
+            if (!isNaN(qty) && qty > 0 && !isNaN(pricePerThousand)) {
+                const total = Math.round((pricePerThousand / 1000) * qty);
+                estimatedPriceInfo.textContent = `Estimasi Total: Rp ${total.toLocaleString('id-ID')}`;
+                return total;
+            }
+        }
+        estimatedPriceInfo.textContent = '';
+        return 0;
+    }
+
+    function validateSMMSelection() {
+        const targetIdFilled = targetIdInput.checkValidity();
+        selectedProductData = null;
+        const checkedRadio = document.querySelector('input[name="selected_sosmed_product"]:checked');
+        let quantityValid = true;
+        let minQty = 0, maxQty = Infinity;
+
+        if (checkedRadio) {
+             selectedProductData = {
+                code: checkedRadio.value,
+                name: checkedRadio.dataset.name,
+                price: parseInt(checkedRadio.dataset.price),
+                min: parseInt(checkedRadio.dataset.min),
+                max: parseInt(checkedRadio.dataset.max),
+                catatan: checkedRadio.dataset.catatan
+            };
+            quantityContainer.style.display = 'block';
+            minQty = selectedProductData.min;
+            maxQty = selectedProductData.max;
+            quantityInput.min = minQty;
+            quantityInput.max = maxQty;
+            quantityFeedback.textContent = `Jumlah antara ${minQty} - ${maxQty}.`;
+            
+            const currentQty = parseInt(quantityInput.value);
+            if (isNaN(currentQty) || currentQty < minQty || currentQty > maxQty) {
+                quantityValid = false;
+            }
+        } else {
+            quantityContainer.style.display = 'none';
+        }
+        
+        calculateEstimatedPrice();
+
+        if (targetIdFilled && selectedProductData && quantityInput.value && quantityValid) {
+            checkoutButtonContainer.style.display = 'block';
+            selectedProductInfo.innerHTML = `Terpilih: <span class="text-primary">${selectedProductData.name}</span>`;
+            selectionError.style.display = 'none';
+            proceedBtn.disabled = false;
+        } else {
+            checkoutButtonContainer.style.display = 'none';
+            selectedProductInfo.textContent = '';
+            proceedBtn.disabled = true;
+        }
+    }
+
+    productRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.product-select-card').forEach(card => card.classList.remove('border-primary'));
+            if (this.checked) {
+                this.closest('.product-select-card').classList.add('border-primary');
+            }
+            validateSMMSelection();
+        });
+    });
+    targetIdInput.addEventListener('input', validateSMMSelection);
+    quantityInput.addEventListener('input', validateSMMSelection);
+
+
+    proceedBtn.addEventListener('click', function() {
+        document.getElementById('sosmedOrderForm').classList.add('was-validated');
+         const currentQty = parseInt(quantityInput.value);
+        if (!targetIdInput.checkValidity() || !selectedProductData || !quantityInput.value || isNaN(currentQty) || currentQty < selectedProductData.min || currentQty > selectedProductData.max) {
+            selectionError.style.display = 'block';
+            return;
+        }
+        const estimatedTotal = calculateEstimatedPrice();
+        const queryString = new URLSearchParams({
+            product_code: selectedProductData.code,
+            product_name: selectedProductData.name,
+            product_price: selectedProductData.price, // Harga per 1000
+            target_id: targetIdInput.value,
+            quantity_smm: quantityInput.value,
+            service_type: 'sosmed',
+            server_smm: '<%= currentServer %>'
+        }).toString();
+        window.location.href = `/layanan/checkout?${queryString}`;
+    });
+    filterServices();
+    validateSMMSelection();
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,27 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5 page-content-container nebula-service-page">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h1 class="display-5 fw-bold page-main-title"><i class="fas fa-concierge-bell me-3 text-primary"></i>Layanan Digital <%= storeName %></h1>
+        <p class="lead text-muted col-md-8 mx-auto">
+            Pilih jenis layanan digital yang Anda butuhkan.
+        </p>
+    </div>
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="100">
+            <a href="/layanan/ppob" class="card text-center text-decoration-none shadow-hover p-4 h-100">
+                <i class="fas fa-bolt fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Pulsa & PPOB</h4>
+                <p class="card-text text-muted small">Isi Pulsa, Paket Data, Token Listrik, Bayar Tagihan, Voucher Game, dll.</p>
+            </a>
+        </div>
+        <div class="col-md-6 col-lg-4" data-aos="fade-up" data-aos-delay="200">
+             <a href="/layanan/sosmed" class="card text-center text-decoration-none shadow-hover p-4 h-100">
+                <i class="fas fa-users fa-3x text-info mb-3"></i>
+                <h4 class="card-title">Sosial Media</h4>
+                <p class="card-text text-muted small">Followers, Likes, Views untuk berbagai platform.</p>
+            </a>
+        </div>
+    </div>
+</div>
+<style>.shadow-hover:hover{transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;}</style>
+<%- include('../partials/footer') %>

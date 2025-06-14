@@ -1,0 +1,88 @@
+<%- include('../partials/header') %>
+
+<div class="container py-md-5" id="product-detail-page">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/products"><i class="fas fa-store me-1"></i>Produk</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><%= product.name %></li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <div class="col-lg-7" data-aos="fade-right">
+            <h1 class="display-5 fw-bold mb-3"><%= product.name %></h1>
+            <div class="d-flex align-items-center mb-3">
+                <span class="badge bg-primary-light text-primary p-2 fs-09 me-3">
+                    <i class="fas fa-tag me-1"></i> <%= product.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                </span>
+                <span class="badge bg-success-light text-success p-2 fs-09">
+                    <i class="fas fa-box-open me-1"></i> Stok: <span class="fw-bold"><%= product.stock > 0 ? product.stock : 'Habis' %></span>
+                </span>
+            </div>
+            <hr class="my-4">
+            <h4 class="mb-3 fw-semibold"><i class="fas fa-info-circle me-2 text-primary"></i>Deskripsi Produk</h4>
+            <p class="text-muted lh-lg" style="white-space: pre-wrap;"><%= product.description %></p>
+            
+            <% if (product.category === 'vps' && product.digitalOceanVpsSpecs) { %>
+                <h5 class="mt-4 mb-3 fw-semibold"><i class="fas fa-server me-2 text-primary"></i>Spesifikasi VPS DigitalOcean:</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><i class="fas fa-map-marker-alt text-success me-2"></i>Region: <span class="fw-medium"><%= product.digitalOceanVpsSpecs.region %></span></li>
+                    <li class="list-group-item"><i class="fas fa-ruler-combined text-success me-2"></i>Ukuran: <span class="fw-medium"><%= product.digitalOceanVpsSpecs.size %></span></li>
+                    <li class="list-group-item"><i class="fab fa-ubuntu text-success me-2"></i>Image OS: <span class="fw-medium"><%= product.digitalOceanVpsSpecs.osImage %></span></li>
+                </ul>
+            <% } else if (product.category === 'pterodactyl_panel' && product.pterodactylSpecs) { %>
+                 <h5 class="mt-4 mb-3 fw-semibold"><i class="fas fa-gamepad me-2 text-primary"></i>Spesifikasi Panel Pterodactyl:</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><i class="fas fa-memory text-success me-2"></i>RAM: <span class="fw-medium"><%= product.pterodactylSpecs.ram %> MB</span></li>
+                    <li class="list-group-item"><i class="fas fa-hdd text-success me-2"></i>Disk: <span class="fw-medium"><%= product.pterodactylSpecs.disk %> MB</span></li>
+                    <li class="list-group-item"><i class="fas fa-microchip text-success me-2"></i>CPU: <span class="fw-medium"><%= product.pterodactylSpecs.cpu %> %</span></li>
+                </ul>
+            <% } else if (product.category === 'app_premium') { %>
+                <h5 class="mt-4 mb-3 fw-semibold"><i class="fas fa-star me-2 text-warning"></i>Fitur Aplikasi Premium (Contoh):</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i>Akses Penuh Fitur Premium</li>
+                    <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i>Tanpa Iklan</li>
+                    <li class="list-group-item"><i class="fas fa-check-circle text-success me-2"></i>Dukungan Prioritas</li>
+                </ul>
+            <% } %>
+        </div>
+        <div class="col-lg-5" data-aos="fade-left" data-aos-delay="100">
+            <div class="card shadow-lg product-info-card sticky-top border-0" style="top: 100px;">
+                <div class="card-body p-4">
+                    <% if (currentUser && currentUser.role === 'reseller' && product.resellerPrice && product.resellerPrice < product.price) { %>
+                        <h3 class="card-title text-center text-secondary fw-bold mb-1 text-decoration-line-through">Rp <%= product.price.toLocaleString('id-ID') %></h3>
+                        <h2 class="card-title text-center text-success fw-bolder mb-3 product-reseller-price mx-auto" style="font-size: 1.8rem;">Rp <%= product.resellerPrice.toLocaleString('id-ID') %></h2>
+                        <p class="text-center text-success small mb-3 fw-semibold"><i class="fas fa-tags me-1"></i> Harga Spesial Reseller!</p>
+                    <% } else { %>
+                        <h2 class="card-title text-center text-secondary fw-bolder mb-3" style="font-size: 2rem;">Rp <%= product.price.toLocaleString('id-ID') %></h2>
+                    <% } %>
+                    <hr>
+                    <% if (currentUser) { %>
+                        <% if (product.stock > 0) { %>
+                            <a href="/checkout/<%= product._id %>" class="btn btn-success btn-lg d-grid fw-bold">
+                                <i class="fas fa-shopping-cart me-2"></i>BELI SEKARANG
+                            </a>
+                        <% } else { %>
+                            <button class="btn btn-danger btn-lg d-block w-100 fw-bold" disabled>
+                                <i class="fas fa-times-circle me-2"></i>STOK HABIS
+                            </button>
+                        <% } %>
+                    <% } else { %>
+                        <a href="/login?returnTo=/product/<%= product._id %>" class="btn btn-primary btn-lg d-block w-100 fw-bold">
+                            <i class="fas fa-sign-in-alt me-2"></i>LOGIN UNTUK MEMBELI
+                        </a>
+                    <% } %>
+                    <div class="text-center mt-3">
+                         <a href="<%= storeWhatsappLink %>?text=Halo, saya tertarik dengan produk <%= encodeURIComponent(product.name) %> (ID: <%= product._id %>)" target="_blank" class="btn btn-outline-success btn-sm">
+                            <i class="fab fa-whatsapp me-1"></i> Tanya via WhatsApp
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .bg-success-light { background-color: rgba(40, 167, 69, 0.1); }
+</style>
+<%- include('../partials/footer') %>

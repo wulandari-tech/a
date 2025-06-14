@@ -1,0 +1,102 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <i class="fas fa-cogs fa-3x text-primary mb-3"></i>
+                    <h2 class="card-title">Setup Akun Panel Pterodactyl</h2>
+                    <p class="lead">Pembayaran untuk <strong><%= product.name %></strong> berhasil!</p>
+                    <p>Silakan buat username dan password untuk akun panel Pterodactyl Anda.</p>
+                    <hr>
+                    <div id="pteroSetupFormContainer">
+                        <form id="pteroSetupForm">
+                            <input type="hidden" name="orderId" value="<%= order._id %>">
+                            <div class="mb-3 text-start">
+                                <label for="panel_username" class="form-label">Username Panel:</label>
+                                <input type="text" class="form-control" id="panel_username" name="panel_username" pattern="[a-zA-Z0-9_]+" title="Hanya huruf, angka, dan underscore. Tanpa spasi." required>
+                                <div class="form-text">Hanya huruf, angka, dan underscore. Tanpa spasi. Akan diubah ke huruf kecil.</div>
+                            </div>
+                            <div class="mb-3 text-start">
+                                <label for="panel_password" class="form-label">Password Panel:</label>
+                                <input type="password" class="form-control" id="panel_password" name="panel_password" minlength="8" required>
+                                 <div class="form-text">Minimal 8 karakter.</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-check-circle"></i> Buat Akun Panel</button>
+                            </div>
+                        </form>
+                        <div id="pteroSetupMessage" class="mt-3"></div>
+                    </div>
+
+                    <div id="pteroSuccessContainer" style="display:none;">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h4>Akun Panel Berhasil Dibuat!</h4>
+                        <p>Berikut adalah detail akun panel Anda:</p>
+                        <ul class="list-unstyled text-start mx-auto" style="max-width: 300px;">
+                            <li><strong>Username:</strong> <span id="successUsername"></span></li>
+                            <li><strong>Password:</strong> <span id="successPassword"></span></li>
+                        </ul>
+                        <p class="mt-3">Harap simpan detail ini dengan baik. Anda akan diarahkan ke panel.</p>
+                        <a href="#" id="goToPanelButton" class="btn btn-primary btn-lg mt-2" target="_blank"><i class="fas fa-external-link-alt"></i> Buka Panel Pterodactyl</a>
+                         <p class="mt-3"><a href="/user/profile">Kembali ke Profil</a></p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const pteroSetupForm = document.getElementById('pteroSetupForm');
+        const pteroSetupMessage = document.getElementById('pteroSetupMessage');
+        const pteroSetupFormContainer = document.getElementById('pteroSetupFormContainer');
+        const pteroSuccessContainer = document.getElementById('pteroSuccessContainer');
+        const successUsername = document.getElementById('successUsername');
+        const successPassword = document.getElementById('successPassword');
+        const goToPanelButton = document.getElementById('goToPanelButton');
+
+        if (pteroSetupForm) {
+            pteroSetupForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                pteroSetupMessage.innerHTML = '<div class="spinner-border spinner-border-sm text-primary" role="status"><span class="visually-hidden">Loading...</span></div> Membuat akun, mohon tunggu...';
+                const formData = new FormData(pteroSetupForm);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch('/pterodactyl/setup-account', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        pteroSetupMessage.innerHTML = '';
+                        pteroSetupFormContainer.style.display = 'none';
+                        pteroSuccessContainer.style.display = 'block';
+                        successUsername.textContent = result.panelUsername;
+                        successPassword.textContent = result.panelPassword;
+                        goToPanelButton.href = result.panelDomain;
+                        
+                        setTimeout(() => { // Auto redirect
+                           window.location.href = result.panelDomain;
+                        }, 7000); // Redirect setelah 7 detik
+
+                    } else {
+                        pteroSetupMessage.innerHTML = `<div class="alert alert-danger">${result.message || 'Gagal membuat akun panel.'}</div>`;
+                    }
+                } catch (error) {
+                    pteroSetupMessage.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan jaringan atau server. Silakan coba lagi.</div>`;
+                    console.error('Error:', error);
+                }
+            });
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>

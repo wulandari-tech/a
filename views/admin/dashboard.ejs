@@ -1,0 +1,264 @@
+
+<%- include('../partials/header', { pageTitle: 'Admin Dashboard' }) %>
+
+<style>
+    .admin-chat-container {
+        height: 480px; 
+        display: flex;
+        border: 1px solid var(--border-color);
+        border-radius: var(--border-radius-lg);
+        overflow: hidden;
+        background-color: #fff;
+    }
+    .admin-chat-user-list {
+        width: 300px; 
+        border-right: 1px solid var(--border-color);
+        overflow-y: auto;
+        background-color: #f8f9fa;
+    }
+    .admin-chat-user-list .list-group-item {
+        cursor: pointer;
+        border-radius: 0;
+        border-left: 4px solid transparent; 
+        padding: 0.85rem 1rem; 
+        transition: background-color 0.2s ease, border-left-color 0.2s ease;
+    }
+    .admin-chat-user-list .list-group-item:hover {
+        background-color: #e9ecef;
+    }
+    .admin-chat-user-list .list-group-item.active {
+        background-color: var(--primary-light);
+        border-left-color: var(--primary-color);
+        color: var(--primary-color);
+    }
+    .admin-chat-user-list .list-group-item.active .user-name {
+        font-weight: 700;
+    }
+     .admin-chat-user-list .list-group-item .user-name {
+        font-weight: 600;
+        color: var(--text-color);
+    }
+    .admin-chat-user-list .list-group-item .preview {
+        color: #6c757d;
+    }
+    .admin-chat-user-list .badge {
+        font-size: 0.75rem; 
+    }
+    .admin-chat-main {
+        flex-grow: 1;
+        display: flex;
+        flex-direction: column;
+    }
+    .admin-chat-messages {
+        flex-grow: 1;
+        padding: 1rem;
+        overflow-y: auto;
+        background-color: #f4f7f9; 
+        display: flex; 
+        flex-direction: column; 
+    }
+    .admin-chat-messages .message {
+        margin-bottom: 0.8rem;
+        padding: 0.6rem 1rem; 
+        border-radius: 14px; 
+        max-width: 75%;
+        word-wrap: break-word;
+        font-size: 0.9rem;
+        line-height: 1.45; 
+    }
+    .admin-chat-messages .message.sent {
+        background-color: var(--primary-color);
+        color: white;
+        align-self: flex-end;
+        margin-left: auto;
+        border-bottom-right-radius: 5px;
+    }
+    .admin-chat-messages .message.received {
+        background-color: #e9ecef; 
+        color: var(--text-color);
+        align-self: flex-start;
+        margin-right: auto;
+        border-bottom-left-radius: 5px;
+    }
+    .admin-chat-messages .message .sender {
+        font-weight: 600;
+        font-size: 0.75rem;
+        display: block;
+        margin-bottom: 3px;
+        color: #555;
+    }
+    .admin-chat-messages .message.sent .sender { color: rgba(255,255,255,0.8); }
+    .admin-chat-messages .message .timestamp {
+        font-size: 0.7rem;
+        color: #888; 
+        display: block;
+        margin-top: 4px;
+        text-align: right;
+    }
+    .admin-chat-messages .message.sent .timestamp { color: rgba(255,255,255,0.7); }
+
+    .admin-chat-input-form {
+        display: flex;
+        padding: 0.85rem; 
+        border-top: 1px solid var(--border-color);
+        background-color: #fff;
+    }
+    .admin-chat-input-form input {
+        border-radius: var(--border-radius); 
+        padding: 0.75rem 1rem; 
+    }
+    .admin-chat-input-form button {
+        border-radius: 50%;
+        width: 42px; 
+        height: 42px;
+        padding: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        flex-shrink: 0;
+        margin-left: 0.75rem;
+    }
+    #adminChatPlaceholder {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100%;
+        color: #aaa;
+        text-align: center;
+    }
+    #adminChatPlaceholder i { font-size: 3.5rem; margin-bottom: 1rem; opacity: 0.7;}
+    #adminChatPlaceholder p { font-size: 1.1rem; }
+</style>
+
+<% if (locals.adminSuccess && Array.isArray(adminSuccess) && adminSuccess.length > 0) { %>
+    <% adminSuccess.forEach(msg => { %>
+        <div class="alert alert-success alert-dismissible fade show mt-3 mx-md-0 mx-3" role="alert">
+            <i class="fas fa-check-circle me-2"></i><%= msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% }) %>
+<% } %>
+<% if (locals.adminError && Array.isArray(adminError) && adminError.length > 0) { %> 
+    <% adminError.forEach(msg => { %>
+        <div class="alert alert-danger alert-dismissible fade show mt-3 mx-md-0 mx-3" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i><%= msg %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% }) %>
+<% } %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom border-2 border-primary">
+    <h1 class="h2 fw-bolder text-primary"><i class="fas fa-chart-line fa-fw me-3"></i>Dashboard Admin</h1>
+</div>
+
+<div class="row">
+    <div class="col-md-6 col-xl-3 mb-4" data-aos="fade-up">
+        <div class="admin-dashboard-card bg-card-users shadow-lg">
+            <div class="card-body">
+                <div class="card-title text-uppercase">Total Pengguna</div>
+                <div class="card-text"><%= typeof totalUsers !== 'undefined' ? totalUsers : 0 %></div>
+                <i class="fas fa-users card-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="admin-dashboard-card bg-card-products shadow-lg">
+            <div class="card-body">
+                <div class="card-title text-uppercase">Total Produk Toko</div>
+                <div class="card-text"><%= typeof totalProducts !== 'undefined' ? totalProducts : 0 %></div>
+                <i class="fas fa-boxes card-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4" data-aos="fade-up" data-aos-delay="200">
+        <div class="admin-dashboard-card bg-card-orders shadow-lg">
+            <div class="card-body">
+                <div class="card-title text-uppercase">Total Pesanan</div>
+                <div class="card-text"><%= typeof totalOrders !== 'undefined' ? totalOrders : 0 %></div>
+                <i class="fas fa-receipt card-icon"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-xl-3 mb-4" data-aos="fade-up" data-aos-delay="300">
+        <div class="admin-dashboard-card bg-card-deposits shadow-lg"> 
+            <div class="card-body">
+                <div class="card-title text-uppercase">Deposit Sukses</div>
+                <div class="card-text">Rp <%= (typeof totalSuccessfulDepositAmount !== 'undefined' ? totalSuccessfulDepositAmount : 0).toLocaleString('id-ID') %></div>
+                <i class="fas fa-money-check-alt card-icon"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-lg-7">
+        <div class="card shadow-sm border-0 mb-4" data-aos="fade-up" data-aos-delay="400">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold"><i class="fas fa-bolt me-2"></i>Akses Cepat Manajemen</h5>
+            </div>
+            <div class="list-group list-group-flush">
+                <a href="/admin/products" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-box-open fa-fw me-3 text-primary"></i>Kelola Produk Toko</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+                <a href="/admin/orders" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-receipt fa-fw me-3 text-info"></i>Kelola Semua Pesanan</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+                <a href="/admin/deposits" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-wallet fa-fw me-3 text-success"></i>Kelola Deposit Pengguna</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+                 <a href="/admin/withdrawals" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-hand-holding-usd fa-fw me-3 text-warning"></i>Kelola Penarikan Dana</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+                <a href="/admin/users" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-users-cog fa-fw me-3 text-secondary"></i>Kelola Pengguna & Seller</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+                <a href="/admin/information-board" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center py-3">
+                    <span><i class="fas fa-bullhorn fa-fw me-3 text-warning"></i>Kelola Papan Informasi</span>
+                    <i class="fas fa-chevron-right text-muted"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+         <div class="card shadow-sm border-0" data-aos="fade-up" data-aos-delay="500">
+            <div class="card-header">
+                <h5 class="mb-0 fw-semibold"><i class="fas fa-headset me-2"></i>Live Chat dengan Pengguna</h5>
+            </div>
+            <div class="card-body p-0">
+                <div class="admin-chat-container">
+                    <div class="admin-chat-user-list list-group list-group-flush" id="adminChatUserList">
+                        <div class="p-3 text-center text-muted small d-flex align-items-center justify-content-center h-100" id="noActiveChats">
+                            <div>
+                                <i class="fas fa-users-slash fa-2x mb-2"></i><br>
+                                Belum ada chat aktif.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="admin-chat-main">
+                        <div class="admin-chat-messages" id="adminChatMessages">
+                            <div id="adminChatPlaceholder">
+                                <i class="fas fa-comment-dots"></i>
+                                <p>Pilih pengguna dari daftar untuk memulai chat.</p>
+                            </div>
+                        </div>
+                        <form class="admin-chat-input-form" id="adminChatForm" style="display:none;">
+                            <input type="text" class="form-control" id="adminMessageInput" placeholder="Ketik balasan..." autocomplete="off" required>
+                            <button type="submit" class="btn btn-primary" id="adminSendMessageBtn">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="/js/admin_chat.js"></script> 
+<%- include('../partials/footer') %>

@@ -1,0 +1,77 @@
+<%- include('../partials/header', { pageTitle: 'Permintaan Penarikan Dana' }) %>
+
+<div class="container py-md-5">
+    <h2 class="mb-4 fw-bold"><i class="fas fa-hand-holding-usd me-2"></i>Formulir Penarikan Dana</h2>
+    <p class="text-muted">Minimal penarikan dana adalah Rp 30.000. Pastikan data rekening tujuan sudah benar.</p>
+    <hr class="mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    <% if (currentUser && currentUser.isVerified) { %>
+                        <form action="/user/withdraw/request" method="POST" class="needs-validation" novalidate>
+                            <div class="form-floating mb-3">
+                                <input type="number" class="form-control form-control-lg" id="amount" name="amount" min="30000" placeholder="Jumlah Penarikan" required
+                                       max="<%= currentUser.balance %>">
+                                <label for="amount"><i class="fas fa-coins me-2"></i>Jumlah Penarikan (Rp)</label>
+                                <div class="invalid-feedback">Jumlah minimal Rp 30.000 dan tidak boleh melebihi saldo Anda.</div>
+                                <div class="form-text">Saldo Anda saat ini: Rp <%= currentUser.balance.toLocaleString('id-ID') %></div>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control form-control-lg" id="bankName" name="bankName" placeholder="Nama Bank Tujuan (Contoh: BCA, Mandiri, DANA)" required>
+                                <label for="bankName"><i class="fas fa-university me-2"></i>Nama Bank / E-Wallet Tujuan</label>
+                                <div class="invalid-feedback">Nama Bank/E-Wallet wajib diisi.</div>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control form-control-lg" id="accountNumber" name="accountNumber" placeholder="Nomor Rekening / E-Wallet" required pattern="[0-9]+">
+                                <label for="accountNumber"><i class="fas fa-hashtag me-2"></i>Nomor Rekening / E-Wallet Tujuan</label>
+                                <div class="invalid-feedback">Nomor Rekening/E-Wallet wajib diisi dan hanya angka.</div>
+                            </div>
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control form-control-lg" id="accountHolderName" name="accountHolderName" placeholder="Nama Pemilik Rekening Sesuai Buku Tabungan/Aplikasi" required>
+                                <label for="accountHolderName"><i class="fas fa-user-check me-2"></i>Nama Pemilik Rekening Tujuan</label>
+                                <div class="invalid-feedback">Nama Pemilik Rekening wajib diisi.</div>
+                            </div>
+                             <div class="alert alert-info small">
+                                <strong>Perhatian:</strong> Biaya admin penarikan mungkin berlaku dan akan dipotong dari jumlah yang ditarik.
+                                Penarikan akan diproses oleh admin dalam 1-2 hari kerja (atau lebih cepat).
+                            </div>
+                            <div class="d-grid mt-4">
+                                <button type="submit" class="btn btn-success btn-lg fw-bold" <%= currentUser.balance < 30000 ? 'disabled' : '' %>>
+                                    <i class="fas fa-paper-plane me-2"></i>Kirim Permintaan Penarikan
+                                </button>
+                            </div>
+                        </form>
+                    <% } else { %>
+                         <div class="alert alert-danger text-center">
+                            <i class="fas fa-exclamation-triangle fa-2x mb-3"></i>
+                            <h5 class="alert-heading">Fitur Penarikan Belum Aktif</h5>
+                            <p>Untuk melakukan penarikan dana, Anda harus memverifikasi alamat email Anda terlebih dahulu.</p>
+                            <form action="/user/resend-verification" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-warning">Kirim Ulang Email Verifikasi</button>
+                            </form>
+                             <a href="/user/profile" class="btn btn-outline-primary ms-2">Kembali ke Profil</a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+</script>
+<%- include('../partials/footer') %>

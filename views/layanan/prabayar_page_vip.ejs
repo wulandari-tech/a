@@ -1,0 +1,209 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Layanan Prabayar</h1>
+        <p class="lead text-muted">Pilih kategori, operator, dan produk prabayar.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm sticky-top" style="top: 100px;">
+                <div class="card-header bg-primary-light">
+                    <h5 class="mb-0 text-primary"><i class="fas fa-filter me-2"></i>Filter Layanan</h5>
+                </div>
+                <div class="list-group list-group-flush" id="categoryFilterPrabayar">
+                    <a href="#" class="list-group-item list-group-item-action active" data-filter-tipe="all">
+                        <i class="fas fa-list-ul me-2"></i>Semua Tipe
+                    </a>
+                    <% Object.keys(categories).sort().forEach(tipe => { %>
+                        <a href="#" class="list-group-item list-group-item-action" data-filter-tipe="<%= tipe.toLowerCase().replace(/\s+/g, '-') %>">
+                            <i class="fas fa-tag me-2"></i><%= tipe %> 
+                            <span class="badge bg-secondary rounded-pill float-end"><%= categories[tipe].length %></span>
+                        </a>
+                    <% }); %>
+                </div>
+                 <div class="card-body border-top">
+                    <label for="brandFilterPrabayar" class="form-label small">Filter Brand/Operator:</label>
+                    <select id="brandFilterPrabayar" class="form-select form-select-sm">
+                        <option value="all" selected>Semua Brand</option>
+                        <% brands.forEach(brand => { %>
+                            <option value="<%= brand %>"><%= brand %></option>
+                        <% }); %>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <form id="prabayarOrderFormVip" class="needs-validation" novalidate>
+                 <div class="form-floating mb-4">
+                    <input type="text" class="form-control form-control-lg" id="target_id_prabayar_vip" name="target_id_prabayar_vip" placeholder="Nomor Tujuan / ID Pelanggan" required pattern="\d+">
+                    <label for="target_id_prabayar_vip">Nomor Tujuan / ID Pelanggan</label>
+                    <div class="invalid-feedback">Nomor Tujuan/ID wajib diisi dan hanya angka.</div>
+                </div>
+
+                <div id="prabayarServiceListVip" class="row row-cols-1 row-cols-sm-2 row-cols-lg-3 g-3">
+                    <% let serviceCount = 0; %>
+                    <% Object.values(categories).forEach(servicesInCat => { serviceCount += servicesInCat.length; }); %>
+                    <% if (serviceCount > 0) { %>
+                        <% Object.entries(categories).forEach(([tipe, services]) => { %>
+                            <% services.forEach(item => { %>
+                                <div class="col service-item-vip" data-tipe="<%= tipe.toLowerCase().replace(/\s+/g, '-') %>" data-brand="<%= item.operator || 'Unknown' %>">
+                                    <label class="card h-100 product-select-card-vip">
+                                        <input type="radio" name="selected_product_vip" class="d-none" 
+                                               value="<%= item.sid %>"
+                                               data-name="<%= item.layanan %>" 
+                                               data-price="<%= item.harga %>"
+                                               data-note="<%= item.catatan || '' %>"
+                                               required>
+                                        <div class="card-body text-center d-flex flex-column justify-content-center p-3">
+                                            <h6 class="card-title small fw-bold mb-1"><%= item.layanan %></h6>
+                                            <p class="card-text fw-bolder text-success mb-1 fs-5">Rp <%= parseInt(item.harga).toLocaleString('id-ID') %></p>
+                                            <small class="text-muted note-text d-block mb-2" style="font-size: 0.7rem;"><%= item.catatan %></small>
+                                            <span class="badge bg-<%= item.status && item.status.toLowerCase() === 'normal' ? 'success-light text-success' : 'danger-light text-danger' %> p-1" style="font-size: 0.65rem;"><%= item.status || 'Tersedia' %></span>
+                                        </div>
+                                    </label>
+                                </div>
+                            <% }) %>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-12"><p class="alert alert-warning">Tidak ada layanan prabayar yang tersedia saat ini atau sesuai filter.</p></div>
+                    <% } %>
+                </div>
+                 <div id="noServiceMessagePrabayar" class="alert alert-info mt-3" style="display: none;">Tidak ada layanan yang cocok dengan filter Anda.</div>
+
+                <div class="text-center mt-4 sticky-bottom bg-white py-3 shadow-top" id="prabayarCheckoutButtonContainerVip" style="display:none;">
+                    <p id="selectedPrabayarProductInfoVip" class="mb-2 fw-bold fs-5"></p>
+                    <button type="button" id="proceedToCheckoutPrabayarBtnVip" class="btn btn-success btn-lg">
+                        <i class="fas fa-shield-alt me-2"></i> Beli & Bayar Sekarang
+                    </button>
+                    <p id="prabayarSelectionErrorVip" class="text-danger mt-2 small" style="display:none;">Silakan masukkan Nomor Tujuan dan pilih produk.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<style>
+.product-select-card-vip { cursor: pointer; border: 2px solid var(--border-color); transition: border-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.product-select-card-vip:hover { border-color: var(--primary-hover-color); transform: translateY(-3px); box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.1);}
+.product-select-card-vip input[type="radio"]:checked + .card-body {
+    background-color: var(--primary-light);
+    border-color: var(--primary-color) !important; 
+    box-shadow: 0 0 0 0.2rem rgba(122, 47, 219, 0.3);
+}
+.shadow-top { box-shadow: 0 -0.35rem 0.75rem rgba(0,0,0,0.08); border-top: 1px solid #eee; }
+.bg-success-light { background-color: rgba(var(--bs-success-rgb), 0.15) !important; }
+.bg-danger-light { background-color: rgba(var(--bs-danger-rgb), 0.15) !important; }
+.list-group-item-action.active { z-index: 2; color: #fff; background-color: var(--primary-color); border-color: var(--primary-color); }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const targetIdInput = document.getElementById('target_id_prabayar_vip');
+    const productRadios = document.querySelectorAll('input[name="selected_product_vip"]');
+    const checkoutButtonContainer = document.getElementById('prabayarCheckoutButtonContainerVip');
+    const selectedProductInfo = document.getElementById('selectedPrabayarProductInfoVip');
+    const proceedBtn = document.getElementById('proceedToCheckoutPrabayarBtnVip');
+    const selectionError = document.getElementById('prabayarSelectionErrorVip');
+    const categoryFilters = document.querySelectorAll('#categoryFilterPrabayar .list-group-item-action');
+    const brandFilterSelect = document.getElementById('brandFilterPrabayar');
+    const serviceItems = document.querySelectorAll('#prabayarServiceListVip .service-item-vip');
+    const noServiceMessage = document.getElementById('noServiceMessagePrabayar');
+    let selectedProductData = null;
+
+    function filterServices() {
+        const activeTipeFilter = document.querySelector('#categoryFilterPrabayar .list-group-item-action.active').dataset.filterTipe;
+        const selectedBrand = brandFilterSelect.value;
+        let visibleCount = 0;
+        serviceItems.forEach(item => {
+            const itemTipe = item.dataset.tipe;
+            const itemBrand = item.dataset.brand;
+            const showForTipe = activeTipeFilter === 'all' || itemTipe === activeTipeFilter;
+            const showForBrand = selectedBrand === 'all' || itemBrand === selectedBrand;
+            if (showForTipe && showForBrand) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        noServiceMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+        const checkedRadio = document.querySelector('input[name="selected_product_vip"]:checked');
+        if(checkedRadio && checkedRadio.closest('.service-item-vip').style.display === 'none'){
+            checkedRadio.checked = false;
+            selectedProductData = null;
+            document.querySelectorAll('.product-select-card-vip').forEach(card => card.style.borderColor = 'var(--border-color)');
+        }
+    }
+
+    categoryFilters.forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            categoryFilters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            filterServices();
+            validateSelection();
+        });
+    });
+    brandFilterSelect.addEventListener('change', () => {
+        filterServices();
+        validateSelection();
+    });
+
+    function validateSelection() {
+        const targetIdFilled = targetIdInput.checkValidity() && targetIdInput.value.trim() !== '';
+        selectedProductData = null;
+        const checkedRadio = document.querySelector('input[name="selected_product_vip"]:checked');
+        if (checkedRadio && checkedRadio.closest('.service-item-vip').style.display !== 'none') {
+             selectedProductData = {
+                code: checkedRadio.value,
+                name: checkedRadio.dataset.name,
+                price: parseInt(checkedRadio.dataset.price),
+                note: checkedRadio.dataset.note
+            };
+        }
+
+        if (targetIdFilled && selectedProductData) {
+            checkoutButtonContainer.style.display = 'block';
+            selectedProductInfo.innerHTML = `Terpilih: <span class="text-primary">${selectedProductData.name}</span><br>Total: <span class="text-success">Rp ${selectedProductData.price.toLocaleString('id-ID')}</span>`;
+            selectionError.style.display = 'none';
+            proceedBtn.disabled = false;
+        } else {
+            checkoutButtonContainer.style.display = 'none';
+            selectedProductInfo.textContent = '';
+            proceedBtn.disabled = true;
+        }
+    }
+
+    productRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.product-select-card-vip').forEach(card => card.style.borderColor = 'var(--border-color)');
+            if (this.checked) {
+                this.closest('.product-select-card-vip').style.borderColor = 'var(--primary-color)';
+            }
+            validateSelection();
+        });
+    });
+    targetIdInput.addEventListener('input', validateSelection);
+
+    proceedBtn.addEventListener('click', function() {
+        document.getElementById('prabayarOrderFormVip').classList.add('was-validated');
+        if (!targetIdInput.value.trim() || !selectedProductData) {
+            selectionError.textContent = 'Silakan masukkan Nomor Tujuan dan pilih salah satu produk.';
+            selectionError.style.display = 'block';
+            return;
+        }
+        const queryString = new URLSearchParams({
+            product_code: selectedProductData.code,
+            product_name: selectedProductData.name,
+            product_price: selectedProductData.price,
+            target_id: targetIdInput.value.trim(),
+            service_type: 'prabayar',
+            note: selectedProductData.note
+        }).toString();
+        window.location.href = `/layanan/checkout?${queryString}`;
+    });
+    filterServices();
+    validateSelection();
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,20 @@
+<%- include('../partials/header') %>
+
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <i class="fas fa-ghost fa-5x text-primary mb-4"></i>
+            <h1 class="display-1 fw-bold">404</h1>
+            <h2 class="mb-3">Oops! Halaman Tidak Ditemukan</h2>
+            <p class="lead text-muted mb-4">
+                Maaf, halaman yang Anda cari (`<%= url %>`) tidak ada atau mungkin telah dipindahkan.
+            </p>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="/" class="btn btn-primary btn-lg px-4 gap-3"><i class="fas fa-home me-2"></i>Kembali ke Beranda</a>
+                <a href="/layanan" class="btn btn-outline-secondary btn-lg px-4"><i class="fas fa-store-alt me-2"></i>Lihat Layanan Kami</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

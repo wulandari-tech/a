@@ -1,0 +1,154 @@
+
+<%- include('../partials/header', { pageTitle: 'Admin - Kelola Papan Informasi' }) %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-info-circle me-2"></i>Kelola Papan Informasi</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addInfoModal">
+            <i class="fas fa-plus-circle me-1"></i> Tambah Informasi Baru
+        </button>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Judul</th>
+                        <th>Status</th>
+                        <th>Dibuat Pada</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(informations && informations.length > 0) { %>
+                        <% informations.forEach(info => { %>
+                            <tr>
+                                <td class="fw-bold"><%= info.title %></td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= info.isActive ? 'success' : 'secondary' %>">
+                                        <%= info.isActive ? 'Aktif' : 'Nonaktif' %>
+                                    </span>
+                                </td>
+                                <td><small><%= new Date(info.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) %></small></td>
+                                <td class="text-center table-action-buttons">
+                                    <button type="button" class="btn btn-sm btn-outline-primary edit-info-btn" 
+                                            data-id="<%= info._id %>" 
+                                            data-title="<%= info.title %>" 
+                                            data-content="<%= restante.escape(info.content) %>" 
+                                            data-isactive="<%= info.isActive %>"
+                                            title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </button>
+                                    <form action="/admin/information/delete/<%= info._id %>" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus informasi ini: <%= info.title %>?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="4" class="text-center p-4 text-muted">
+                                <i class="fas fa-exclamation-circle fa-2x mb-2"></i><br>
+                                Belum ada informasi yang ditambahkan.
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="addInfoModal" tabindex="-1" aria-labelledby="addInfoModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <form id="infoForm" action="/admin/information/add" method="POST">
+                <input type="hidden" name="infoId" id="infoId">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="addInfoModalLabel">Tambah Informasi Baru</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="infoTitle" class="form-label">Judul Informasi</label>
+                        <input type="text" class="form-control" id="infoTitle" name="title" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="infoContent" class="form-label">Konten Informasi</label>
+                        <textarea class="form-control" id="infoContent" name="content" rows="10" required placeholder="Anda bisa menggunakan tag HTML dasar seperti <p>, <b>, <i>, <ul>, <li>, <a>, <br>"></textarea>
+                        <small class="form-text text-muted">Anda dapat menggunakan HTML dasar untuk format. Hati-hati dengan script jahat.</small>
+                    </div>
+                    <div class="form-check form-switch mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="infoIsActive" name="isActive" checked>
+                        <label class="form-check-label" for="infoIsActive">Aktifkan Informasi (Tampilkan ke Pengguna)</label>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+                    <button type="submit" class="btn btn-primary" id="saveInfoButton">Simpan Informasi</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const addInfoModal = new bootstrap.Modal(document.getElementById('addInfoModal'));
+    const infoForm = document.getElementById('infoForm');
+    const modalTitle = document.getElementById('addInfoModalLabel');
+    const infoIdInput = document.getElementById('infoId');
+    const infoTitleInput = document.getElementById('infoTitle');
+    const infoContentInput = document.getElementById('infoContent');
+    const infoIsActiveInput = document.getElementById('infoIsActive');
+    const saveInfoButton = document.getElementById('saveInfoButton');
+
+    document.querySelector('[data-bs-target="#addInfoModal"]').addEventListener('click', function() {
+        infoForm.action = '/admin/information/add';
+        modalTitle.textContent = 'Tambah Informasi Baru';
+        saveInfoButton.textContent = 'Simpan Informasi';
+        infoIdInput.value = '';
+        infoForm.reset(); 
+        infoIsActiveInput.checked = true; 
+    });
+
+    document.querySelectorAll('.edit-info-btn').forEach(button => {
+        button.addEventListener('click', function () {
+            const id = this.dataset.id;
+            const title = this.dataset.title;
+            const content = this.dataset.content; 
+            const isActive = this.dataset.isactive === 'true';
+
+            infoForm.action = `/admin/information/edit/${id}`;
+            modalTitle.textContent = 'Edit Informasi';
+            saveInfoButton.textContent = 'Update Informasi';
+            infoIdInput.value = id;
+            infoTitleInput.value = title;
+            infoContentInput.value = content; 
+            infoIsActiveInput.checked = isActive;
+            addInfoModal.show();
+        });
+    });
+});
+</script>
+<%!
+    var restante = {
+        escape: function(str) {
+            if (typeof str !== 'string') {
+                return '';
+            }
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+    };
+%>
+<%- include('../partials/footer') %>

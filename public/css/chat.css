@@ -1,0 +1,182 @@
+#liveChatToggleContainer {
+    position: fixed;
+    bottom: 25px;
+    right: 25px;
+    z-index: 1040; 
+}
+
+#chatToggleButton {
+    width: 60px;
+    height: 60px;
+    font-size: 1.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    transition: transform 0.2s ease-in-out, background-color 0.2s ease;
+}
+#chatToggleButton:hover {
+    transform: scale(1.1);
+}
+#chatToggleButton i { 
+    margin-right: 0 !important; 
+}
+
+#liveChatModal .modal-dialog {
+    margin-right: 1.5rem; /* Jarak dari kanan saat modal muncul */
+    margin-bottom: 6rem; /* Jarak dari bawah, sesuaikan dengan posisi tombol toggle */
+    max-width: 380px;
+    position: fixed;
+    bottom: 0;
+    right: 0;
+    transition: transform 0.3s ease-out; /* Animasi muncul */
+}
+
+#liveChatModal.show .modal-dialog {
+    transform: none;
+}
+
+
+#chatModalContent {
+    height: 500px; /* Tinggi modal chat */
+    max-height: 75vh;
+    display: flex;
+    flex-direction: column;
+    border-radius: var(--border-radius);
+}
+
+#liveChatModal .modal-header {
+    padding: 0.8rem 1rem;
+}
+#liveChatModal .modal-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+#liveChatModal .modal-body {
+    flex-grow: 1;
+    overflow-y: hidden; /* Biarkan #chatMessages yang scroll */
+}
+
+#chatMessages {
+    height: 100%;
+    overflow-y: auto;
+    font-size: 0.9rem;
+    background-color: #f9f9f9;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-message {
+    margin-bottom: 10px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    max-width: 85%;
+    word-wrap: break-word;
+    line-height: 1.4;
+}
+
+.chat-message.user {
+    background-color: var(--primary-color);
+    color: white;
+    align-self: flex-end;
+    margin-left: auto;
+    border-bottom-right-radius: 4px;
+}
+
+.chat-message.other,
+.chat-message.admin {
+    background-color: #e9ecef;
+    color: var(--text-color);
+    align-self: flex-start;
+    margin-right: auto;
+    border-bottom-left-radius: 4px;
+}
+.chat-message.admin {
+    background-color: #fff3cd;
+    border-left: 3px solid var(--warning-color);
+}
+
+.chat-message .sender {
+    font-weight: 600;
+    display: block;
+    font-size: 0.75rem;
+    margin-bottom: 3px;
+    color: #555;
+}
+.chat-message.user .sender {
+    color: rgba(255,255,255,0.8);
+}
+
+.chat-message .text-content {
+    line-height: 1.4;
+}
+
+.chat-message .timestamp {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    display: block;
+    margin-top: 4px;
+    text-align: right;
+}
+.chat-message.user .timestamp {
+    color: rgba(255,255,255,0.7);
+}
+
+#liveChatModal .modal-footer {
+    padding: 0.75rem 1rem;
+    background-color: #f8f9fa;
+    border-top: 1px solid var(--border-color);
+}
+
+#liveChatModal .modal-footer input {
+    border-radius: 20px;
+}
+#liveChatModal .modal-footer button {
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+
+@media (max-width: 576px) {
+    #liveChatModal .modal-dialog {
+        max-width: calc(100% - 2rem); /* Lebar modal di mobile */
+        margin-right: 1rem;
+        margin-left: 1rem;
+        margin-bottom: calc(60px + 1rem + 10px); /* Tombol + margin + sedikit ruang */
+    }
+     #liveChatToggleContainer {
+        right: 15px;
+        bottom: 15px;
+    }
+    #chatToggleButton {
+        width: 55px;
+        height: 55px;
+        font-size: 1.6rem;
+    }
+}
+
+#chatToggleButton.has-new-message::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 12px;
+    height: 12px;
+    background-color: var(--danger-color);
+    border-radius: 50%;
+    border: 2px solid white;
+    animation: pulseDot 1.5s infinite;
+}
+
+@keyframes pulseDot {
+    0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.7); }
+    70% { transform: scale(1.1); box-shadow: 0 0 0 8px rgba(255, 46, 99, 0); }
+    100% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(255, 46, 99, 0); }
+}

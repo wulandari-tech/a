@@ -1,0 +1,149 @@
+<%- include('../partials/header') %>
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom border-2 border-primary">
+    <h1 class="h2 fw-bolder text-primary"><i class="fas fa-receipt fa-fw me-3"></i>Kelola Pesanan</h1>
+</div>
+<div class="card shadow-lg border-0">
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th scope="col"><i class="fas fa-hashtag me-1"></i>ID</th>
+                        <th scope="col"><i class="fas fa-user me-1"></i>Pengguna</th>
+                        <th scope="col"><i class="fas fa-box me-1"></i>Produk/Layanan</th>
+                        <th scope="col"><i class="fas fa-tags me-1"></i>Tipe</th>
+                        <th scope="col"><i class="fas fa-dollar-sign me-1"></i>Total</th>
+                        <th scope="col"><i class="fas fa-credit-card me-1"></i>Metode</th>
+                        <th scope="col"><i class="fas fa-hourglass-half me-1"></i>Status</th>
+                        <th scope="col"><i class="fas fa-calendar-alt me-1"></i>Tanggal</th>
+                        <th scope="col" class="text-center"><i class="fas fa-cogs me-1"></i>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(orders && orders.length > 0) { %>
+                        <% orders.forEach(order => { %>
+                            <tr>
+                                <td><small class="text-muted">...<%= order._id.toString().slice(-6) %></small></td>
+                                <td><%= order.user ? order.user.username : 'N/A' %></td>
+                                <td class="fw-medium"><%= order.productNameSnapshot || 'N/A' %></td>
+                                <td>
+                                    <span class="badge bg-info text-dark">
+                                        <i class="fas <%= order.productType === 'physical_virtual' ? 'fa-server' : (order.productType === 'game_topup' ? 'fa-gamepad' : (order.productType === 'transfer_fund' ? 'fa-exchange-alt' : 'fa-tag')) %> me-1"></i>
+                                        <%= order.productType ? order.productType.replace(/_/g, ' ') : 'Tidak Diketahui' %>
+                                    </span>
+                                </td>
+                                <td>Rp <%= (order.totalPrice || 0).toLocaleString('id-ID') %></td>
+                                <td>
+                                    <%= order.paymentMethodType ? order.paymentMethodType.replace('_', ' ') : 'N/A' %>
+                                    <% if (order.paymentGatewayDetails && order.paymentGatewayDetails.gateway) { %>
+                                        (<%= order.paymentGatewayDetails.gateway.replace('_', ' ') %>)
+                                    <% } %>
+                                </td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase 
+                                        <% if (['paid_with_balance', 'paid_with_gateway', 'completed', 'processing_pterodactyl', 'processing_vps', 'processing_game_topup', 'processing_transfer'].includes(order.status)) { %>bg-success<% } 
+                                        else if (order.status === 'pending_payment') { %>bg-warning text-dark<% } 
+                                        else { %>bg-danger<% } %>">
+                                        <i class="fas <%= order.status === 'completed' ? 'fa-check-circle' : (order.status === 'pending_payment' ? 'fa-hourglass-start' : (order.status && order.status.includes('processing') ? 'fa-cogs' : 'fa-times-circle')) %> me-1"></i>
+                                        <%= order.status ? order.status.replace(/_/g, ' ') : 'N/A' %>
+                                    </span>
+                                </td>
+                                <td><small><%= new Date(order.createdAt).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'}) %></small></td>
+                                <td class="text-center table-action-buttons">
+                                    <% if (order.paymentGatewayDetails && order.paymentGatewayDetails.gateway === 'ORKUT_QRIS' && order.status === 'pending_payment') { %>
+                                        <button class="btn btn-sm btn-outline-info check-orkut-status-btn" data-orderid="<%= order._id %>" title="Cek Status Pembayaran Orkut">
+                                            <i class="fas fa-search-dollar"></i> Cek Orkut
+                                        </button>
+                                    <% } else if (order.productType === 'transfer_fund' && order.status === 'processing_transfer') { %>
+                                        <button class="btn btn-sm btn-outline-primary check-transfer-status-btn" data-orderid="<%= order._id %>" title="Cek Status Transfer">
+                                            <i class="fas fa-sync-alt"></i> Cek Provider
+                                        </button>
+                                     <% } else { %>
+                                        <a href="/admin/orders/detail/<%= order._id %>" class="btn btn-sm btn-outline-secondary" title="Lihat Detail Order">
+                                            <i class="fas fa-eye"></i> Detail
+                                        </a>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr><td colspan="9" class="text-center p-5 my-4"><i class="fas fa-receipt fa-3x text-muted mb-3"></i><h5 class="text-muted">Belum ada pesanan.</h5></td></tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="orkutStatusModal" tabindex="-1" aria-labelledby="orkutStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="orkutStatusModalLabel"><i class="fas fa-credit-card me-2"></i>Status Pembayaran Orkut QRIS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="orkutStatusModalBody">
+                <p class="text-center"><span class="spinner-border spinner-border-sm text-primary me-2"></span>Memeriksa status...</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"><i class="fas fa-times me-1"></i>Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const orkutStatusModalEl = document.getElementById('orkutStatusModal');
+    let orkutStatusModal;
+    if (orkutStatusModalEl) {
+        orkutStatusModal = new bootstrap.Modal(orkutStatusModalEl);
+    }
+    const orkutStatusModalBody = document.getElementById('orkutStatusModalBody');
+    const orkutStatusModalLabel = document.getElementById('orkutStatusModalLabel');
+
+    document.querySelectorAll('.check-orkut-status-btn').forEach(button => {
+        button.addEventListener('click', async function () {
+            if (!orkutStatusModal) return;
+            const orderId = this.dataset.orderid;
+            orkutStatusModalLabel.innerHTML = `<i class="fas fa-search-dollar me-2"></i>Status Orkut Order ...${orderId.slice(-6)}`;
+            orkutStatusModalBody.innerHTML = '<div class="d-flex justify-content-center align-items-center py-4"><div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"><span class="visually-hidden">Loading...</span></div> <p class="ms-3 mb-0 fs-5">Memeriksa status...</p></div>';
+            orkutStatusModal.show();
+
+            try {
+                const response = await fetch(`/admin/orders/check-orkut-status/${orderId}`);
+                const result = await response.json();
+                
+                let content = `<p class="mb-2"><strong>Pesan Server:</strong> <span class="fw-medium ${result.success ? 'text-success' : 'text-danger'}">${result.message}</span></p>`;
+                if (result.success) {
+                    content += `<p class="mb-2"><strong>Status Order Setelah Dicek:</strong> <span class="badge fs-08 bg-${result.order_status_after_check && result.order_status_after_check.includes('pending') ? 'warning text-dark' : (result.order_status_after_check && result.order_status_after_check.includes('fail') ? 'danger' : 'success')}">${result.order_status_after_check ? result.order_status_after_check.replace(/_/g,' ') : 'N/A'}</span></p>`;
+                    if (result.found_match && result.matched_transaction) {
+                        const tx = result.matched_transaction;
+                        content += '<h6 class="mt-3 mb-2 text-primary">Detail Mutasi yang Cocok:</h6>';
+                        content += `<ul class="list-group list-group-flush">
+                                        <li class="list-group-item py-2"><strong>Tanggal:</strong> ${new Date(tx.date.replace(" ", "T")+"+07:00").toLocaleString('id-ID', {dateStyle:'full', timeStyle:'long'})}</li>
+                                        <li class="list-group-item py-2"><strong>Issuer:</strong> ${tx.brand_name}</li>
+                                        <li class="list-group-item py-2"><strong>Nominal:</strong> Rp ${parseInt(tx.amount).toLocaleString('id-ID')}</li>
+                                        <li class="list-group-item py-2"><strong>Ref. Issuer:</strong> ${tx.issuer_reff || 'N/A'}</li>
+                                        <li class="list-group-item py-2"><strong>Ref. Buyer:</strong> ${tx.buyer_reff || 'N/A'}</li>
+                                    </ul>`;
+                    }
+                    if (result.raw_mutasi_data && result.raw_mutasi_data.data && result.raw_mutasi_data.data.length > 0 && !result.found_match) {
+                         content += '<hr><h6 class="mt-3 mb-2">Data Mutasi Terkini (Tidak Cocok Otomatis):</h6><div style="max-height: 200px; overflow-y: auto; font-size: 0.8rem;"><pre class="bg-light p-2 rounded">' + JSON.stringify(result.raw_mutasi_data.data, null, 2) + '</pre></div>';
+                    }
+                } else {
+                     content = `<div class="alert alert-danger"><i class="fas fa-exclamation-triangle me-2"></i>${result.message || "Gagal memeriksa status."}</div>`;
+                }
+                orkutStatusModalBody.innerHTML = content;
+                if (result.order_status_after_check && !result.order_status_after_check.includes('pending_payment')) {
+                     setTimeout(() => { window.location.reload(); }, 3500);
+                }
+            } catch (err) {
+                orkutStatusModalBody.innerHTML = `<div class="alert alert-danger"><i class="fas fa-bomb me-2"></i>Terjadi kesalahan: ${err.message}</div>`;
+                console.error("Error fetching orkut status:", err);
+            }
+        });
+    });
+});
+</script>
+<%- include('../partials/footer') %>

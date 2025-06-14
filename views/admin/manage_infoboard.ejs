@@ -1,0 +1,149 @@
+<%- include('../partials/header', { pageTitle: 'Admin - Kelola Papan Informasi' }) %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-4 border-bottom border-2 border-primary">
+    <h1 class="h2 fw-bolder text-primary"><i class="fas fa-bullhorn fa-fw me-3"></i>Kelola Papan Informasi</h1>
+</div>
+
+<div class="card shadow-lg border-0 mb-5" data-aos="fade-up">
+    <div class="card-header bg-primary text-white">
+        <h5 class="mb-0 fw-semibold"><i class="fas fa-plus-circle me-2"></i>Tambah Item Informasi Baru</h5>
+    </div>
+    <div class="card-body p-4">
+        <form action="/admin/information-board/add" method="POST" class="needs-validation" novalidate>
+            <div class="row g-3">
+                <div class="col-md-7">
+                    <div class="form-floating mb-3">
+                        <input type="text" class="form-control form-control-lg" id="title" name="title" placeholder="Judul Informasi" required>
+                        <label for="title"><i class="fas fa-heading me-2"></i>Judul Informasi</label>
+                        <div class="invalid-feedback">Judul tidak boleh kosong.</div>
+                    </div>
+                </div>
+                <div class="col-md-5">
+                     <div class="form-floating mb-3">
+                        <select class="form-select form-select-lg" id="type" name="type">
+                            <option value="info" selected>Informasi (Biru)</option>
+                            <option value="warning">Peringatan (Kuning)</option>
+                            <option value="promo">Promo (Hijau)</option>
+                            <option value="maintenance">Maintenance (Merah)</option>
+                        </select>
+                        <label for="type"><i class="fas fa-tag me-2"></i>Tipe Pesan</label>
+                    </div>
+                </div>
+            </div>
+            <div class="form-floating mb-3">
+                <textarea class="form-control form-control-lg" id="content" name="content" rows="4" placeholder="Konten Pesan" style="min-height: 120px;" required></textarea>
+                <label for="content"><i class="fas fa-align-left me-2"></i>Konten Pesan</label>
+                <div class="invalid-feedback">Konten tidak boleh kosong.</div>
+            </div>
+            <button type="submit" class="btn btn-primary btn-lg fw-bold shimmer-btn">
+                <i class="fas fa-paper-plane me-2"></i> Publikasikan Informasi
+            </button>
+        </form>
+    </div>
+</div>
+<style>
+    .shimmer-btn {
+        position: relative;
+        overflow: hidden;
+    }
+    .shimmer-btn::after {
+        content: '';
+        position: absolute;
+        top: -50%;
+        left: -50%;
+        width: 200%;
+        height: 200%;
+        background-image: linear-gradient(100deg, rgba(255, 255, 255, 0) 20%, rgba(255, 255, 255, 0.3) 50%, rgba(255, 255, 255, 0) 80%);
+        transform: rotate(20deg);
+        animation: shimmer 2.5s infinite;
+    }
+    @keyframes shimmer {
+        0% { transform: translateX(-100%) rotate(20deg); }
+        100% { transform: translateX(100%) rotate(20deg); }
+    }
+</style>
+
+<div class="card shadow-lg border-0" data-aos="fade-up" data-aos-delay="100">
+    <div class="card-header bg-light">
+        <h5 class="mb-0 text-dark fw-semibold"><i class="fas fa-list-alt me-2"></i>Daftar Item Informasi (<%= typeof items !== 'undefined' && Array.isArray(items) ? items.length : 0 %>)</h5>
+    </div>
+    <div class="card-body p-0">
+        <% if(typeof items !== 'undefined' && Array.isArray(items) && items.length > 0) { %>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                        <tr>
+                            <th scope="col">Judul</th>
+                            <th scope="col">Tipe</th>
+                            <th scope="col">Dibuat Oleh</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Tanggal</th>
+                            <th scope="col" class="text-center">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <% items.forEach(item => { %>
+                            <tr class="<%= !item.isActive ? 'opacity-50' : '' %>" data-item-id="<%= item._id %>">
+                                <td class="fw-medium"><%= item.title %></td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase 
+                                        <% if (item.type === 'warning') { %>bg-warning text-dark<% 
+                                        } else if (item.type === 'promo') { %>bg-success<% 
+                                        } else if (item.type === 'maintenance') { %>bg-danger<% 
+                                        } else { %>bg-info<% } %>">
+                                        <i class="fas fa-<%= item.type === 'warning' ? 'exclamation-triangle' : (item.type === 'promo' ? 'gift' : (item.type === 'maintenance' ? 'tools' : 'info-circle')) %> me-1"></i>
+                                        <%= item.type %>
+                                    </span>
+                                </td>
+                                <td><small><%= item.createdBy ? item.createdBy.username : 'N/A' %></small></td>
+                                <td>
+                                    <form action="/admin/information-board/toggle/<%= item._id %>" method="POST" class="d-inline">
+                                        <button type="submit" class="btn btn-sm btn-link p-0 border-0 text-decoration-none" title="<%= item.isActive ? 'Nonaktifkan' : 'Aktifkan' %>">
+                                            <span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= item.isActive ? 'success' : 'secondary' %>">
+                                                <i class="fas fa-toggle-<%= item.isActive ? 'on' : 'off' %> me-1"></i>
+                                                <%= item.isActive ? 'Aktif' : 'Nonaktif' %>
+                                            </span>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td><small><%= new Date(item.createdAt).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'}) %></small></td>
+                                <td class="text-center table-action-buttons">
+                                    <form action="/admin/information-board/delete/<%= item._id %>" method="POST" class="d-inline" onsubmit="return confirm('Yakin ingin menghapus item ini: <%= item.title %>?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    </tbody>
+                </table>
+            </div>
+        <% } else { %>
+            <div class="text-center p-5 my-4">
+                <i class="fas fa-comment-slash fa-3x text-muted mb-3"></i>
+                <h5 class="text-muted">Belum ada item informasi.</h5>
+                <p class="text-muted small">Buat item informasi baru menggunakan form di atas.</p>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+</script>
+
+<%- include('../partials/footer') %>

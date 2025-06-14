@@ -1,0 +1,177 @@
+<%- include('../partials/header') %>
+<div class="container py-md-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/layanan"><i class="fas fa-store-alt me-1"></i>Layanan PPOB</a></li>
+            <li class="breadcrumb-item active" aria-current="page"><%= service.title %></li>
+        </ol>
+    </nav>
+    <div class="text-center mb-5" data-aos="fade-down">
+        <img src="<%= service.banner %>" alt="<%= service.title %> Banner" class="img-fluid rounded mb-3 shadow" style="max-height: 180px; object-fit:contain; padding:15px; background-color: #fff;">
+        <h1 class="display-5 fw-bold">Beli <%= service.title %></h1>
+        <p class="lead text-muted"><%= service.targetFormatInfo %></p>
+    </div>
+
+    <form id="ppobOrderForm" class="card shadow-sm p-4 mb-5 needs-validation" novalidate data-aos="fade-up">
+        <h4 class="text-primary mb-3 fw-bold"><i class="fas fa-user-circle me-2"></i>Masukkan <%= service.productIdLabel %></h4>
+        <div class="row g-3 mb-3">
+            <div class="col-md-<%= service.needsZoneId ? '6' : '12' %>">
+                <div class="form-floating">
+                    <input type="text" class="form-control form-control-lg" id="target_id" name="target_id" placeholder="<%= service.productIdLabel %>" required pattern="\d*">
+                    <label for="target_id"><%= service.productIdLabel %></label>
+                    <div class="invalid-feedback">
+                        <%= service.productIdLabel %> wajib diisi dan hanya boleh angka.
+                    </div>
+                </div>
+            </div>
+            <% if (service.needsZoneId && service.zoneIdLabel) { %>
+            <div class="col-md-6">
+                <div class="form-floating">
+                    <input type="text" class="form-control form-control-lg" id="zone_id" name="zone_id" placeholder="<%= service.zoneIdLabel %>" pattern="\d*" <%= service.zoneIdOptional ? '' : 'required' %>>
+                    <label for="zone_id"><%= service.zoneIdLabel %> <%= service.zoneIdOptional ? '(Opsional)' : '' %></label>
+                     <% if (!service.zoneIdOptional) { %>
+                    <div class="invalid-feedback">
+                        <%= service.zoneIdLabel %> wajib diisi dan hanya boleh angka (jika diperlukan oleh game).
+                    </div>
+                     <% } %>
+                </div>
+            </div>
+            <% } %>
+        </div>
+         <small class="form-text text-muted">Pastikan <%= service.productIdLabel %> <% if (service.needsZoneId && service.zoneIdLabel) { %> dan <%= service.zoneIdLabel %> <% } %> yang Anda masukkan sudah benar.</small>
+    </form>
+
+    <% Object.entries(productData).forEach(([groupTitleKey, products], groupIndex) => { %>
+        <% const groupConfig = service.productGroups.find(g => g.title.toLowerCase().replace(/\s+/g, '') === groupTitleKey); %>
+        <% if (products && products.length > 0) { %>
+            <div class="mb-5" data-aos="fade-up" data-aos-delay="<%= groupIndex * 100 + 100 %>">
+                <h3 class="mb-4 fw-semibold"><i class="fas fa-tags me-2 text-info"></i><%= groupConfig ? groupConfig.title : groupTitleKey.replace(/\b\w/g, l => l.toUpperCase()) %></h3>
+                <div class="row row-cols-2 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-3">
+                    <% products.forEach(item => { %>
+                        <div class="col">
+                            <div class="ppob-product-item" 
+                                 data-code="<%= item.code || 'NO_CODE' %>" 
+                                 data-name="<%= item.name || 'Nama Produk Tidak Tersedia' %>" 
+                                 data-price="<%= item.price || 0 %>">
+                                <div class="product-name"><%= item.name || 'Nama Produk Tidak Tersedia' %></div>
+                                <div>
+                                    <div class="product-price">Rp <%= (item.price || 0).toLocaleString('id-ID') %></div>
+                                    <% if (item.note && item.note.trim() !== "" && item.note.trim() !== "-" && !item.note.toLowerCase().includes(item.name ? item.name.toLowerCase().split(' ')[0].substring(0,5) : '')) { %>
+                                        <small class="product-fee-info" title="<%= item.note %>"><%= item.note.substring(0,30) %><% if(item.note.length > 30) { %>...<% } %></small>
+                                    <% } %>
+                                </div>
+                            </div>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
+    <% }) %>
+    
+    <div class="text-center mt-4 sticky-bottom bg-white py-3 shadow-top" id="checkoutButtonContainer" style="display:none;">
+        <div class="container">
+            <p id="selectedProductInfo" class="mb-2 fw-bold fs-5"></p>
+            <button type="button" id="proceedToCheckoutPPOBBtn" class="btn btn-success btn-lg">
+                <i class="fas fa-shield-alt me-2"></i> Beli & Bayar Sekarang
+            </button>
+            <p id="selectionError" class="text-danger mt-2 small" style="display:none;">Silakan masukkan <%= service.productIdLabel %> dan pilih produk.</p>
+        </div>
+    </div>
+</div>
+<style>
+    .shadow-top { box-shadow: 0 -0.35rem 0.75rem rgba(0,0,0,0.08); border-top: 1px solid #eee; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productItems = document.querySelectorAll('.ppob-product-item');
+    const proceedBtn = document.getElementById('proceedToCheckoutPPOBBtn');
+    const selectionError = document.getElementById('selectionError');
+    const targetIdInput = document.getElementById('target_id');
+    const zoneIdInput = document.getElementById('zone_id'); 
+    const checkoutButtonContainer = document.getElementById('checkoutButtonContainer');
+    const selectedProductInfo = document.getElementById('selectedProductInfo');
+    const ppobOrderForm = document.getElementById('ppobOrderForm');
+
+    const currentServiceSlug = "<%= service.slug %>";
+    const currentServiceCategorySlugForUrl = "<%= service.categorySlug %>";
+    const needsZoneId = <%= service.needsZoneId %>;
+    const zoneIdOptional = <%= service.zoneIdOptional || false %>;
+    let selectedProductData = null;
+
+    function validatePPOBSelection() {
+        ppobOrderForm.classList.add('was-validated');
+        const targetIdFilled = targetIdInput.checkValidity();
+        let zoneIdFilledOrNotNeeded = true;
+        if (needsZoneId && zoneIdInput && !zoneIdOptional) {
+            zoneIdFilledOrNotNeeded = zoneIdInput.checkValidity();
+        }
+
+        const canProceed = targetIdFilled && selectedProductData && selectedProductData.name !== 'Nama Produk Tidak Tersedia' && selectedProductData.code !== 'NO_CODE' && zoneIdFilledOrNotNeeded;
+        
+        if (canProceed) {
+            checkoutButtonContainer.style.display = 'block';
+            selectedProductInfo.innerHTML = `Terpilih: <span class="text-primary">${selectedProductData.name}</span><br>Total: <span class="text-success">Rp ${parseInt(selectedProductData.price).toLocaleString('id-ID')}</span>`;
+            selectionError.style.display = 'none';
+        } else {
+            checkoutButtonContainer.style.display = 'none';
+            selectedProductInfo.textContent = '';
+        }
+        return canProceed;
+    }
+
+    productItems.forEach(item => {
+        item.addEventListener('click', function() {
+            productItems.forEach(i => i.classList.remove('selected'));
+            this.classList.add('selected');
+            selectedProductData = {
+                code: this.dataset.code,
+                name: this.dataset.name,
+                price: this.dataset.price
+            };
+            if (selectedProductData.name === 'Nama Produk Tidak Tersedia' || selectedProductData.code === 'NO_CODE') {
+                alert('Data produk ini tidak valid. Silakan pilih produk lain.');
+                this.classList.remove('selected');
+                selectedProductData = null;
+            }
+            validatePPOBSelection();
+        });
+    });
+
+    targetIdInput.addEventListener('input', validatePPOBSelection);
+    if (zoneIdInput) {
+        zoneIdInput.addEventListener('input', validatePPOBSelection);
+    }
+
+    proceedBtn.addEventListener('click', function() {
+        if (!validatePPOBSelection()) {
+            selectionError.textContent = "Silakan lengkapi <%= service.productIdLabel %> <% if (service.needsZoneId && service.zoneIdLabel && !service.zoneIdOptional) { %> dan <%= service.zoneIdLabel %><% } %> serta pilih salah satu produk yang valid.";
+            selectionError.style.display = 'block';
+            if (!targetIdInput.value.trim()) targetIdInput.focus();
+            else if (needsZoneId && zoneIdInput && !zoneIdOptional && !zoneIdInput.value.trim()) zoneIdInput.focus();
+            else if (!selectedProductData || selectedProductData.name === 'Nama Produk Tidak Tersedia') alert('Silakan pilih produk yang valid dari daftar.');
+            return;
+        }
+
+        const targetId = targetIdInput.value.trim();
+        const zoneId = zoneIdInput ? zoneIdInput.value.trim() : '';
+
+        const queryString = new URLSearchParams({
+            product_code: selectedProductData.code,
+            product_name: selectedProductData.name,
+            product_price: selectedProductData.price,
+            target_id: targetId,
+            zone_id: zoneId,
+            service_slug_from_url: currentServiceSlug,
+            service_category_from_url: currentServiceCategorySlugForUrl,
+            // Menambahkan informasi service.title dan productIdLabel untuk digunakan di halaman checkout jika diperlukan
+            service_title: "<%= encodeURIComponent(service.title) %>",
+            product_id_label: "<%= encodeURIComponent(service.productIdLabel) %>",
+            needs_zone_id: needsZoneId.toString(),
+            zone_id_label: "<%= service.needsZoneId && service.zoneIdLabel ? encodeURIComponent(service.zoneIdLabel) : '' %>"
+        }).toString();
+        
+        window.location.href = `/layanan/checkout/item?${queryString}`;
+    });
+});
+</script>
+<%- include('../partials/footer') %>

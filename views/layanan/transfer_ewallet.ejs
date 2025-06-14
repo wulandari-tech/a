@@ -1,0 +1,283 @@
+<%- include('../partials/header', { pageTitle: "Transfer Dana" }) %>
+<div class="container py-md-5">
+    <div class="text-center mb-5" data-aos="fade-down">
+        <h1 class="display-5 fw-bold">Transfer Dana ke Bank / E-Wallet</h1>
+        <p class="lead text-muted col-md-8 mx-auto">Kirim dana dengan mudah ke berbagai rekening bank atau e-wallet.</p>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <form id="transferForm" class="card shadow-lg border-0 p-4 needs-validation" novalidate data-aos="fade-up">
+                <h4 class="text-primary mb-4 fw-bold"><i class="fas fa-exchange-alt me-2"></i>Formulir Transfer</h4>
+                
+                <div class="mb-3">
+                    <label for="transferMethod" class="form-label fs-5">Pilih Tujuan Transfer:</label>
+                    <select class="form-select form-select-lg" id="transferMethod" name="transferMethod" required>
+                        <option value="" disabled selected>Memuat metode...</option>
+                        <% if (typeof methods !== 'undefined' && methods.length > 0) { %>
+                            <% methods.forEach(method => { %>
+                                <option value="<%= method.bank_code %>" data-type="<%= method.type %>"><%= method.bank_name %></option>
+                            <% }) %>
+                        <% } %>
+                    </select>
+                    <div class="invalid-feedback">Metode tujuan wajib dipilih.</div>
+                </div>
+
+                <div class="form-floating mb-3">
+                    <input type="text" class="form-control form-control-lg" id="accountNumber" name="accountNumber" placeholder="Nomor Rekening / E-Wallet" required pattern="[0-9]+">
+                    <label for="accountNumber">Nomor Rekening / E-Wallet Tujuan</label>
+                    <div class="invalid-feedback">Nomor tujuan wajib diisi dan hanya angka.</div>
+                </div>
+                
+                <div class="form-floating mb-3">
+                    <input type="number" class="form-control form-control-lg" id="transferAmount" name="transferAmount" placeholder="Jumlah Transfer" required min="10000">
+                    <label for="transferAmount">Jumlah Transfer (Rp)</label>
+                    <div class="invalid-feedback">Jumlah transfer minimal Rp 10.000.</div>
+                </div>
+                
+                <div id="validationResult" class="mb-3" style="display:none;">
+                    <div class="alert alert-sm p-2">
+                        <strong id="beneficiaryName"></strong>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <label for="paymentMethodTransfer" class="form-label fs-5">Metode Pembayaran:</label>
+                    <select class="form-select form-select-lg" id="paymentMethodTransfer" name="paymentMethodTransfer" required>
+                        <option value="balance" <%= currentUser && currentUser.balance > 0 ? '' : 'disabled' %>>
+                            Saldo Akun (<%= storeName %>) - Tersedia: Rp <%= (currentUser ? currentUser.balance : 0).toLocaleString('id-ID') %>
+                        </option>
+                        <option value="orkut_qris" <%= !(currentUser && currentUser.balance > 0) ? 'selected' : '' %>>
+                            QRIS (via Orkut)
+                        </option>
+                    </select>
+                    <% if (currentUser && currentUser.balance <= 0) { %>
+                        <div class="small text-danger mt-1">Saldo akun Anda tidak cukup. Silakan pilih QRIS atau <a href="/user/deposit">deposit dulu</a>.</div>
+                    <% } %>
+                </div>
+
+                <div id="feeDetails" class="alert alert-info small p-3 my-3">
+                    Biaya admin transfer mungkin berlaku dan akan dikonfirmasi sebelum transaksi. Perkiraan fee ForestAPI: <span id="forestApiFeeEstimate">Belum diketahui</span>.
+                    <br> Total yang akan dibayar melalui QRIS mungkin termasuk fee payment gateway Orkut.
+                </div>
+
+                <div class="d-grid mt-4">
+                    <button type="button" id="validateAccountBtn" class="btn btn-info btn-lg mb-2"><i class="fas fa-user-check me-2"></i>Validasi Akun Tujuan</button>
+                    <button type="submit" id="submitTransferBtn" class="btn btn-success btn-lg fw-bold" disabled>
+                        <i class="fas fa-paper-plane me-2"></i> Lanjutkan Transfer
+                    </button>
+                </div>
+                <p id="transferError" class="text-danger mt-3 text-center small" style="display:none;"></p>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const transferForm = document.getElementById('transferForm');
+    const transferMethodSelect = document.getElementById('transferMethod');
+    const accountNumberInput = document.getElementById('accountNumber');
+    const transferAmountInput = document.getElementById('transferAmount');
+    const validateAccountBtn = document.getElementById('validateAccountBtn');
+    const submitTransferBtn = document.getElementById('submitTransferBtn');
+    const validationResultDiv = document.getElementById('validationResult');
+    const beneficiaryNameSpan = document.getElementById('beneficiaryName');
+    const transferErrorP = document.getElementById('transferError');
+    const paymentMethodTransferSelect = document.getElementById('paymentMethodTransfer');
+    const forestApiFeeEstimateSpan = document.getElementById('forestApiFeeEstimate');
+
+    let isAccountValidated = false;
+    let validatedAccountDetails = null;
+    let currentTransferAmount = 0;
+
+    async function fetchTransferMethods() {
+        try {
+            const response = await fetch('/api/layanan/transfer-methods'); // Anda perlu membuat route API ini
+            if (!response.ok) throw new Error('Gagal mengambil metode transfer');
+            const result = await response.json();
+            
+            if (result.success && result.data) {
+                transferMethodSelect.innerHTML = '<option value="" disabled selected>Pilih Tujuan Transfer</option>';
+                result.data.forEach(method => {
+                    const option = document.createElement('option');
+                    option.value = method.bank_code;
+                    option.textContent = method.bank_name + (method.type === 'ewallet' ? ' (E-Wallet)' : ' (Bank)');
+                    option.dataset.type = method.type;
+                    transferMethodSelect.appendChild(option);
+                });
+            } else {
+                transferMethodSelect.innerHTML = '<option value="" disabled selected>Gagal memuat metode</option>';
+                transferErrorP.textContent = result.message || 'Gagal memuat metode transfer.';
+                transferErrorP.style.display = 'block';
+            }
+        } catch (error) {
+            console.error("Error fetching transfer methods:", error);
+            transferMethodSelect.innerHTML = '<option value="" disabled selected>Error memuat metode</option>';
+            transferErrorP.textContent = 'Terjadi kesalahan saat mengambil metode transfer.';
+            transferErrorP.style.display = 'block';
+        }
+    }
+    
+    fetchTransferMethods(); // Panggil saat halaman dimuat
+
+    function checkFormValidityForSubmit() {
+        const methodSelected = transferMethodSelect.value !== '';
+        const accNumberValid = accountNumberInput.checkValidity();
+        const amountValid = transferAmountInput.checkValidity();
+        const paymentMethodSelected = paymentMethodTransferSelect.value !== '';
+        let balanceSufficient = true;
+
+        currentTransferAmount = parseFloat(transferAmountInput.value) || 0;
+        const currentUserBalance = parseFloat('<%= (currentUser ? currentUser.balance : 0) %>');
+
+        if (paymentMethodTransferSelect.value === 'balance' && currentUserBalance < currentTransferAmount) {
+            // Nanti tambahkan fee juga di sini
+            balanceSufficient = false;
+             transferErrorP.textContent = 'Saldo akun Anda tidak cukup untuk jumlah transfer ini.';
+             transferErrorP.style.display = 'block';
+        } else if (paymentMethodTransferSelect.value === 'balance' && balanceSufficient){
+             transferErrorP.style.display = 'none';
+        }
+
+
+        if (methodSelected && accNumberValid && amountValid && isAccountValidated && paymentMethodSelected && balanceSufficient) {
+            submitTransferBtn.disabled = false;
+        } else {
+            submitTransferBtn.disabled = true;
+        }
+    }
+    
+    transferMethodSelect.addEventListener('change', () => { isAccountValidated = false; validationResultDiv.style.display = 'none'; checkFormValidityForSubmit(); });
+    accountNumberInput.addEventListener('input', () => { isAccountValidated = false; validationResultDiv.style.display = 'none'; checkFormValidityForSubmit(); });
+    transferAmountInput.addEventListener('input', checkFormValidityForSubmit);
+    paymentMethodTransferSelect.addEventListener('change', checkFormValidityForSubmit);
+
+
+    if (validateAccountBtn) {
+        validateAccountBtn.addEventListener('click', async () => {
+            transferForm.classList.add('was-validated');
+            const bankCode = transferMethodSelect.value;
+            const accountNumber = accountNumberInput.value;
+
+            if (!bankCode || !accountNumberInput.checkValidity()) {
+                transferErrorP.textContent = 'Pilih metode tujuan dan masukkan nomor rekening/e-wallet yang valid.';
+                transferErrorP.style.display = 'block';
+                return;
+            }
+            transferErrorP.style.display = 'none';
+            validateAccountBtn.disabled = true;
+            validateAccountBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Memvalidasi...';
+            
+            try {
+                // Anda perlu membuat route API ini di backend
+                const response = await fetch('/api/layanan/validate-account', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ bank_code: bankCode, account_number: accountNumber })
+                });
+                const result = await response.json();
+
+                validationResultDiv.classList.remove('alert-success', 'alert-danger', 'alert-warning');
+                if (result.success && result.data) {
+                    validatedAccountDetails = result.data;
+                    beneficiaryNameSpan.textContent = `Nama Pemilik: ${result.data.account_name || 'Tidak Ditemukan'}`;
+                    validationResultDiv.classList.add(result.data.account_name ? 'alert-success' : 'alert-warning');
+                    isAccountValidated = true;
+                    if(result.data.fee) { // Jika API validasi mengembalikan fee
+                        forestApiFeeEstimateSpan.textContent = `Rp ${parseInt(result.data.fee).toLocaleString('id-ID')}`;
+                    } else {
+                        forestApiFeeEstimateSpan.textContent = "Tidak ada info fee dari validasi."
+                    }
+                } else {
+                    beneficiaryNameSpan.textContent = `Validasi Gagal: ${result.message || 'Akun tidak ditemukan/valid.'}`;
+                    validationResultDiv.classList.add('alert-danger');
+                    isAccountValidated = false;
+                    forestApiFeeEstimateSpan.textContent = "Gagal validasi."
+                }
+            } catch (error) {
+                console.error("Error validating account:", error);
+                beneficiaryNameSpan.textContent = 'Terjadi kesalahan saat validasi.';
+                validationResultDiv.classList.add('alert-danger');
+                isAccountValidated = false;
+                forestApiFeeEstimateSpan.textContent = "Error."
+            } finally {
+                validationResultDiv.style.display = 'block';
+                validateAccountBtn.disabled = false;
+                validateAccountBtn.innerHTML = '<i class="fas fa-user-check me-2"></i>Validasi Akun Tujuan';
+                checkFormValidityForSubmit();
+            }
+        });
+    }
+
+    if (transferForm) {
+        transferForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            if (!isAccountValidated || !submitTransferBtn.disabled === false) { // Double check
+                transferErrorP.textContent = 'Harap validasi akun tujuan dan pastikan semua field terisi dengan benar.';
+                transferErrorP.style.display = 'block';
+                return;
+            }
+            transferErrorP.style.display = 'none';
+            submitTransferBtn.disabled = true;
+            submitTransferBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Memproses Transfer...';
+
+            const formData = {
+                method: transferMethodSelect.value,
+                account_number: accountNumberInput.value,
+                nominal: parseFloat(transferAmountInput.value),
+                payment_method_store: paymentMethodTransferSelect.value,
+                beneficiary_name: validatedAccountDetails ? validatedAccountDetails.account_name : '' // Kirim nama hasil validasi
+            };
+
+            try {
+                // Kirim ke backend untuk diproses (misal, ke /layanan/transfer/process)
+                // Backend akan memanggil API ForestAPI create transfer
+                const response = await fetch('/layanan/transfer/process', { // Anda perlu membuat route ini
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(formData)
+                });
+                const result = await response.json();
+
+                if (result.success) {
+                    // Redirect ke halaman status order atau halaman pembayaran QRIS
+                    if (result.redirectUrl) { // Jika butuh bayar QRIS
+                        window.location.href = result.redirectUrl;
+                    } else { // Jika bayar saldo dan langsung sukses/pending proses
+                        window.location.href = `/layanan/order/${result.orderId}/status`; // Asumsi orderId dikembalikan
+                    }
+                } else {
+                    transferErrorP.textContent = `Transfer Gagal: ${result.message || 'Terjadi kesalahan.'}`;
+                    transferErrorP.style.display = 'block';
+                }
+            } catch (error) {
+                console.error("Error processing transfer:", error);
+                transferErrorP.textContent = 'Terjadi kesalahan jaringan saat memproses transfer.';
+                transferErrorP.style.display = 'block';
+            } finally {
+                // Jangan re-enable tombol submit di sini jika redirect,
+                // tapi re-enable jika error agar user bisa coba lagi
+                if(transferErrorP.style.display === 'block'){
+                    submitTransferBtn.disabled = false;
+                    submitTransferBtn.innerHTML = '<i class="fas fa-paper-plane me-2"></i> Lanjutkan Transfer';
+                }
+            }
+        });
+    }
+     (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('input', function (event) { // Cek validitas saat input berubah
+             checkFormValidityForSubmit();
+          });
+          form.addEventListener('change', function (event) { // Cek validitas saat select berubah
+             checkFormValidityForSubmit();
+          });
+        })
+    })()
+});
+</script>
+<%- include('../partials/footer') %>

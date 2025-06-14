@@ -1,0 +1,152 @@
+<%- include('../partials/header', { pageTitle: 'Admin - Kelola Penarikan Dana' }) %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-hand-holding-usd me-2"></i>Kelola Penarikan Dana Pengguna</h1>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>ID</th>
+                        <th>Pengguna</th>
+                        <th>Jumlah</th>
+                        <th>Rek. Tujuan</th>
+                        <th>Status</th>
+                        <th>Tanggal Minta</th>
+                        <th>Tanggal Update</th>
+                        <th class="text-center">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(withdrawals && withdrawals.length > 0) { %>
+                        <% withdrawals.forEach(wd => { %>
+                            <tr>
+                                <td><small><%= wd._id.toString().slice(-6) %></small></td>
+                                <td class="fw-bold"><%= wd.user ? wd.user.username : 'N/A' %></td>
+                                <td>Rp <%= wd.amount.toLocaleString('id-ID') %></td>
+                                <td>
+                                    <small>
+                                        <%= wd.method %><br>
+                                        <%= wd.accountNumber %><br>
+                                        A/N: <%= wd.accountHolderName %>
+                                    </small>
+                                </td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= wd.status === 'completed' || wd.status === 'approved' ? 'success' : (wd.status === 'pending' ? 'warning text-dark' : 'danger') %>">
+                                        <%= wd.status %>
+                                    </span>
+                                </td>
+                                <td><small><%= new Date(wd.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) %></small></td>
+                                <td><small><%= new Date(wd.updatedAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short', year:'numeric', hour:'2-digit', minute:'2-digit'}) %></small></td>
+                                <td class="text-center">
+                                    <% if(wd.status === 'pending') { %>
+                                        <button class="btn btn-sm btn-info mb-1" data-bs-toggle="modal" data-bs-target="#withdrawalActionModal" data-id="<%= wd._id %>" data-action="approve" data-username="<%= wd.user ? wd.user.username : 'N/A' %>" data-amount="<%= wd.amount %>">Approve</button>
+                                        <button class="btn btn-sm btn-warning mb-1" data-bs-toggle="modal" data-bs-target="#withdrawalActionModal" data-id="<%= wd._id %>" data-action="reject" data-username="<%= wd.user ? wd.user.username : 'N/A' %>" data-amount="<%= wd.amount %>">Reject</button>
+                                    <% } else if (wd.status === 'approved') { %>
+                                        <button class="btn btn-sm btn-success" data-bs-toggle="modal" data-bs-target="#withdrawalActionModal" data-id="<%= wd._id %>" data-action="complete" data-username="<%= wd.user ? wd.user.username : 'N/A' %>" data-amount="<%= wd.amount %>">Tandai Selesai</button>
+                                    <% } else { %>
+                                        <button class="btn btn-sm btn-secondary" disabled>N/A</button>
+                                    <% } %>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="8" class="text-center p-4 text-muted">
+                                <i class="fas fa-funnel-dollar fa-2x mb-2"></i><br>
+                                Belum ada permintaan penarikan dana.
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="withdrawalActionModal" tabindex="-1" aria-labelledby="withdrawalActionModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <form id="withdrawalActionForm" method="POST">
+        <div class="modal-header">
+          <h5 class="modal-title" id="withdrawalActionModalLabel">Konfirmasi Aksi Penarikan</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+        </div>
+        <div class="modal-body">
+          <input type="hidden" name="withdrawalId" id="modalWithdrawalId">
+          <p>Anda akan <strong id="modalActionText"></strong> penarikan dana untuk pengguna <strong id="modalUsername"></strong> sebesar <strong id="modalAmount"></strong>.</p>
+          <div class="mb-3">
+            <label for="adminNotes" class="form-label">Catatan Admin (Opsional untuk Approve/Reject, Wajib untuk Complete jika ada ID Transaksi):</label>
+            <textarea class="form-control" id="adminNotes" name="adminNotes" rows="3"></textarea>
+          </div>
+          <div class="mb-3" id="transactionIdContainer" style="display:none;">
+            <label for="transactionId" class="form-label">ID Transaksi Bank (Jika ada):</label>
+            <input type="text" class="form-control" id="transactionId" name="transactionId">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Batal</button>
+          <button type="submit" class="btn btn-primary" id="modalConfirmButton">Konfirmasi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const withdrawalActionModal = new bootstrap.Modal(document.getElementById('withdrawalActionModal'));
+    const form = document.getElementById('withdrawalActionModal');
+    
+    form.addEventListener('show.bs.modal', function (event) {
+        const button = event.relatedTarget;
+        const withdrawalId = button.dataset.id;
+        const action = button.dataset.action;
+        const username = button.dataset.username;
+        const amount = parseFloat(button.dataset.amount).toLocaleString('id-ID');
+
+        const modalTitle = form.querySelector('.modal-title');
+        const modalWithdrawalIdInput = form.querySelector('#modalWithdrawalId');
+        const modalActionTextInput = form.querySelector('#modalActionText');
+        const modalUsernameInput = form.querySelector('#modalUsername');
+        const modalAmountInput = form.querySelector('#modalAmount');
+        const modalConfirmButton = form.querySelector('#modalConfirmButton');
+        const actionForm = form.querySelector('#withdrawalActionForm');
+        const transactionIdContainer = form.querySelector('#transactionIdContainer');
+        const adminNotesTextarea = form.querySelector('#adminNotes');
+        const transactionIdInput = form.querySelector('#transactionId');
+
+        modalWithdrawalIdInput.value = withdrawalId;
+        modalUsernameInput.textContent = username;
+        modalAmountInput.textContent = 'Rp ' + amount;
+        
+        transactionIdInput.value = '';
+        adminNotesTextarea.value = '';
+
+        if (action === 'approve') {
+            modalTitle.textContent = 'Setujui Penarikan';
+            modalActionTextInput.textContent = 'menyetujui';
+            actionForm.action = `/admin/withdrawals/${withdrawalId}/approve`;
+            modalConfirmButton.className = 'btn btn-info';
+            transactionIdContainer.style.display = 'none';
+        } else if (action === 'reject') {
+            modalTitle.textContent = 'Tolak Penarikan';
+            modalActionTextInput.textContent = 'menolak';
+            actionForm.action = `/admin/withdrawals/${withdrawalId}/reject`;
+            modalConfirmButton.className = 'btn btn-warning';
+            transactionIdContainer.style.display = 'none';
+        } else if (action === 'complete') {
+            modalTitle.textContent = 'Tandai Selesai Penarikan';
+            modalActionTextInput.textContent = 'menandai selesai';
+            actionForm.action = `/admin/withdrawals/${withdrawalId}/complete`;
+            modalConfirmButton.className = 'btn btn-success';
+            transactionIdContainer.style.display = 'block';
+        }
+    });
+});
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,28 @@
+<%- include('partials/header', { pageTitle: 'Situs Dalam Perbaikan' }) %>
+<style>
+    body {
+        display: flex;
+        flex-direction: column;
+        min-height: 100vh;
+        padding-top: 0; 
+    }
+    .main-content-wrapper {
+        flex-grow: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    .navbar.fixed-top {
+        position: static; 
+    }
+</style>
+<div class="container text-center py-5">
+    <i class="fas fa-tools fa-5x text-warning mb-4"></i>
+    <h1>Situs Sedang Dalam Perbaikan</h1>
+    <p class="lead text-muted">Kami sedang melakukan pemeliharaan untuk meningkatkan layanan. Mohon kembali lagi nanti.</p>
+    <p class="mt-4"><%= storeName %></p>
+    <% if (currentUser && currentUser.role === 'admin') { %>
+        <p class="mt-3 small text-info">Anda melihat halaman ini karena mode maintenance aktif. Admin masih bisa mengakses <a href="/admin/dashboard">panel admin</a>.</p>
+    <% } %>
+</div>
+<%- include('partials/footer') %>

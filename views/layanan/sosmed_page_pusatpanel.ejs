@@ -1,0 +1,279 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Layanan Sosial Media</h1>
+        <p class="lead text-muted">Pilih kategori dan layanan SMM.</p>
+    </div>
+
+    <div class="row">
+        <div class="col-md-4 mb-4">
+            <div class="card shadow-sm sticky-top" style="top: 100px;" id="smmFilterCard">
+                <div class="card-header bg-info-light">
+                    <h5 class="mb-0 text-info"><i class="fas fa-filter me-2"></i>Filter Kategori SMM</h5>
+                </div>
+                <div class="list-group list-group-flush filter-list-scrollable" id="categoryFilterSmm">
+                    <a href="#" class="list-group-item list-group-item-action active" data-filter-kategori="all">
+                        <i class="fas fa-list-ul me-2"></i>Semua Kategori
+                    </a>
+                    <% Object.keys(categories).sort().forEach(kategori => { %>
+                        <a href="#" class="list-group-item list-group-item-action" data-filter-kategori="<%= kategori.toLowerCase().replace(/\s+/g, '-') %>">
+                            <i class="fas fa-tag me-2"></i><%= kategori %> 
+                            <span class="badge bg-secondary rounded-pill float-end"><%= categories[kategori].length %></span>
+                        </a>
+                    <% }); %>
+                </div>
+                <div class="card-footer p-2 text-center bg-light" id="scrollButtonsSmmFilter" style="display: none;">
+                    <button class="btn btn-sm btn-outline-secondary scroll-smm-filter-btn" data-direction="up"><i class="fas fa-chevron-up"></i></button>
+                    <button class="btn btn-sm btn-outline-secondary scroll-smm-filter-btn" data-direction="down"><i class="fas fa-chevron-down"></i></button>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <form id="smmOrderFormPusatPanel" class="needs-validation" novalidate>
+                 <div class="form-floating mb-3">
+                    <input type="text" class="form-control form-control-lg" id="target_data_smm" name="target_data_smm" placeholder="Link / Username Target" required>
+                    <label for="target_data_smm">Link / Username Target</label>
+                    <div class="invalid-feedback">Link/Username Target wajib diisi.</div>
+                </div>
+                 <div class="form-floating mb-4">
+                    <input type="number" class="form-control form-control-lg" id="quantity_smm" name="quantity_smm" placeholder="Jumlah Pesanan" required>
+                    <label for="quantity_smm">Jumlah Pesanan</label>
+                    <div class="invalid-feedback" id="quantity_smm_feedback">Jumlah pesanan wajib diisi dan numerik.</div>
+                </div>
+
+
+                <div id="smmServiceListPusatPanel" class="row row-cols-1 row-cols-sm-2 g-3">
+                    <% let smmServiceCount = 0; %>
+                    <% Object.values(categories).forEach(servicesInCat => { smmServiceCount += servicesInCat.length; }); %>
+                    <% if (smmServiceCount > 0) { %>
+                        <% Object.entries(categories).forEach(([kategori, services]) => { %>
+                            <% services.forEach(item => { %>
+                                <div class="col service-item-smm" data-kategori="<%= kategori.toLowerCase().replace(/\s+/g, '-') %>">
+                                    <label class="card h-100 product-select-card-smm">
+                                        <input type="radio" name="selected_smm_product" class="d-none" 
+                                               value="<%= item.sid %>"
+                                               data-name="<%= item.layanan %>" 
+                                               data-price-per-1000="<%= item.harga_per_1000 %>"
+                                               data-min="<%= item.min %>"
+                                               data-max="<%= item.max %>"
+                                               data-note="<%= item.catatan || '' %>"
+                                               required>
+                                        <div class="card-body text-center d-flex flex-column justify-content-center p-3">
+                                            <h6 class="card-title small fw-bold mb-1"><%= item.layanan %></h6>
+                                            <p class="card-text fw-bolder text-success mb-1 fs-6">Rp <%= parseInt(item.harga_per_1000).toLocaleString('id-ID') %> <small class="text-muted">/1000</small></p>
+                                            <small class="text-muted note-text d-block mb-1" style="font-size: 0.7rem;">Min: <%= item.min %> / Max: <%= item.max %></small>
+                                            <small class="text-muted note-text d-block" style="font-size: 0.7rem;"><%- item.catatan.replace(/\r\n/g, '<br>') %></small>
+                                        </div>
+                                    </label>
+                                </div>
+                            <% }) %>
+                        <% }) %>
+                    <% } else { %>
+                        <div class="col-12"><p class="alert alert-warning">Tidak ada layanan SMM yang tersedia saat ini atau sesuai filter.</p></div>
+                    <% } %>
+                </div>
+                <div id="noSmmServiceMessage" class="alert alert-info mt-3" style="display: none;">Tidak ada layanan yang cocok dengan filter Anda.</div>
+
+                <div class="text-center mt-4 sticky-bottom bg-white py-3 shadow-top" id="smmCheckoutButtonContainer" style="display:none;">
+                    <p id="selectedSmmProductInfo" class="mb-2 fw-bold fs-5"></p>
+                    <button type="button" id="proceedToCheckoutSmmBtn" class="btn btn-info btn-lg text-white">
+                        <i class="fas fa-paper-plane me-2"></i> Order Sekarang
+                    </button>
+                    <p id="smmSelectionError" class="text-danger mt-2 small" style="display:none;">Silakan masukkan Target, Jumlah, dan pilih produk.</p>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<style>
+.product-select-card-smm { cursor: pointer; border: 2px solid var(--border-color); transition: border-color 0.2s ease-in-out, transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out; }
+.product-select-card-smm:hover { border-color: var(--info-color); transform: translateY(-3px); box-shadow: 0 0.25rem 0.75rem rgba(0,0,0,.1);}
+.product-select-card-smm input[type="radio"]:checked + .card-body {
+    background-color: rgba(var(--bs-info-rgb), 0.1) !important; 
+    border-color: var(--info-color) !important; 
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-info-rgb), 0.25);
+}
+.shadow-top { box-shadow: 0 -0.35rem 0.75rem rgba(0,0,0,0.08); border-top: 1px solid #eee; }
+.bg-info-light { background-color: rgba(var(--bs-info-rgb), 0.1) !important; }
+.list-group-item-action.active { z-index: 2; color: #fff; background-color: var(--info-color); border-color: var(--info-color); }
+.filter-list-scrollable { max-height: 300px; overflow-y: auto; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const targetDataInput = document.getElementById('target_data_smm');
+    const quantityInput = document.getElementById('quantity_smm');
+    const productRadios = document.querySelectorAll('input[name="selected_smm_product"]');
+    const checkoutButtonContainer = document.getElementById('smmCheckoutButtonContainer');
+    const selectedProductInfo = document.getElementById('selectedSmmProductInfo');
+    const proceedBtn = document.getElementById('proceedToCheckoutSmmBtn');
+    const selectionError = document.getElementById('smmSelectionError');
+    const categoryFilters = document.querySelectorAll('#categoryFilterSmm .list-group-item-action');
+    const serviceItems = document.querySelectorAll('#smmServiceListPusatPanel .service-item-smm');
+    const noServiceMessage = document.getElementById('noSmmServiceMessage');
+    const quantityFeedback = document.getElementById('quantity_smm_feedback');
+    let selectedProductData = null;
+
+    const filterListScrollable = document.querySelector('.filter-list-scrollable');
+    const scrollButtonsContainer = document.getElementById('scrollButtonsSmmFilter');
+    const scrollButtons = document.querySelectorAll('.scroll-smm-filter-btn');
+
+    if (filterListScrollable && scrollButtonsContainer && filterListScrollable.scrollHeight > filterListScrollable.clientHeight) {
+        scrollButtonsContainer.style.display = 'flex';
+        scrollButtonsContainer.style.justifyContent = 'space-around';
+    }
+
+    scrollButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            const direction = this.dataset.direction;
+            const scrollAmount = 100; 
+            if (direction === 'up') {
+                filterListScrollable.scrollTop -= scrollAmount;
+            } else {
+                filterListScrollable.scrollTop += scrollAmount;
+            }
+        });
+    });
+
+
+    function filterServices() {
+        const activeKategoriFilter = document.querySelector('#categoryFilterSmm .list-group-item-action.active').dataset.filterKategori;
+        let visibleCount = 0;
+        serviceItems.forEach(item => {
+            const itemKategori = item.dataset.kategori;
+            if (activeKategoriFilter === 'all' || itemKategori === activeKategoriFilter) {
+                item.style.display = '';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+        noServiceMessage.style.display = visibleCount === 0 ? 'block' : 'none';
+        const checkedRadio = document.querySelector('input[name="selected_smm_product"]:checked');
+        if(checkedRadio && checkedRadio.closest('.service-item-smm').style.display === 'none'){
+            checkedRadio.checked = false;
+            selectedProductData = null;
+             document.querySelectorAll('.product-select-card-smm').forEach(card => card.style.borderColor = 'var(--border-color)');
+        }
+    }
+
+    categoryFilters.forEach(filter => {
+        filter.addEventListener('click', function(e) {
+            e.preventDefault();
+            categoryFilters.forEach(f => f.classList.remove('active'));
+            this.classList.add('active');
+            filterServices();
+            validateSelection();
+        });
+    });
+    
+    function validateQuantity() {
+        const qty = parseInt(quantityInput.value);
+        const min = selectedProductData ? parseInt(selectedProductData.min) : 0;
+        const max = selectedProductData ? parseInt(selectedProductData.max) : Infinity;
+        let isValid = true;
+        let feedbackMsg = "Jumlah pesanan wajib diisi dan numerik.";
+
+        if (isNaN(qty) || qty <= 0) {
+            isValid = false;
+        } else if (selectedProductData) {
+            if (qty < min) {
+                isValid = false;
+                feedbackMsg = `Jumlah minimal untuk layanan ini adalah ${min}.`;
+            } else if (qty > max) {
+                isValid = false;
+                feedbackMsg = `Jumlah maksimal untuk layanan ini adalah ${max}.`;
+            }
+        }
+        quantityFeedback.textContent = feedbackMsg;
+        quantityInput.setCustomValidity(isValid ? "" : feedbackMsg);
+        return isValid;
+    }
+
+
+    function validateSelection() {
+        const targetDataFilled = targetDataInput.checkValidity() && targetDataInput.value.trim() !== '';
+        const quantityValue = quantityInput.value.trim();
+        const quantityFilled = quantityValue !== '';
+        selectedProductData = null;
+        const checkedRadio = document.querySelector('input[name="selected_smm_product"]:checked');
+        
+        if (checkedRadio && checkedRadio.closest('.service-item-smm').style.display !== 'none') {
+             selectedProductData = {
+                code: checkedRadio.value,
+                name: checkedRadio.dataset.name,
+                pricePer1000: parseInt(checkedRadio.dataset.pricePer1000),
+                min: checkedRadio.dataset.min,
+                max: checkedRadio.dataset.max,
+                note: checkedRadio.dataset.note
+            };
+        }
+        const quantityValid = quantityFilled && validateQuantity();
+
+
+        if (targetDataFilled && quantityValid && selectedProductData) {
+            const qty = parseInt(quantityInput.value);
+            const totalPrice = Math.round((selectedProductData.pricePer1000 / 1000) * qty);
+            checkoutButtonContainer.style.display = 'block';
+            selectedProductInfo.innerHTML = `Terpilih: <span class="text-primary">${selectedProductData.name}</span><br>Jumlah: ${qty.toLocaleString('id-ID')} - Total: <span class="text-success">Rp ${totalPrice.toLocaleString('id-ID')}</span>`;
+            selectionError.style.display = 'none';
+            proceedBtn.disabled = false;
+        } else {
+            checkoutButtonContainer.style.display = 'none';
+            selectedProductInfo.textContent = '';
+            proceedBtn.disabled = true;
+        }
+    }
+
+    productRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            document.querySelectorAll('.product-select-card-smm').forEach(card => card.style.borderColor = 'var(--border-color)');
+            if (this.checked) {
+                this.closest('.product-select-card-smm').style.borderColor = 'var(--info-color)';
+                 const minQty = this.dataset.min;
+                 const maxQty = this.dataset.max;
+                 quantityInput.min = minQty;
+                 quantityInput.max = maxQty;
+                 quantityFeedback.textContent = `Jumlah antara ${minQty} - ${maxQty}.`;
+                 if(parseInt(quantityInput.value) < parseInt(minQty) && quantityInput.value !== '') quantityInput.value = minQty;
+                 if(parseInt(quantityInput.value) > parseInt(maxQty) && quantityInput.value !== '') quantityInput.value = maxQty;
+            }
+            validateSelection();
+        });
+    });
+    targetDataInput.addEventListener('input', validateSelection);
+    quantityInput.addEventListener('input', validateSelection);
+    quantityInput.addEventListener('blur', function(){
+        if (selectedProductData) validateQuantity(); 
+    });
+
+
+    proceedBtn.addEventListener('click', function() {
+        document.getElementById('smmOrderFormPusatPanel').classList.add('was-validated');
+         if (!targetDataInput.value.trim() || !quantityInput.value.trim() || !selectedProductData || !validateQuantity()) {
+            selectionError.textContent = 'Silakan isi Target, Jumlah (sesuai min/max), dan pilih layanan.';
+            selectionError.style.display = 'block';
+            return;
+        }
+        const qty = parseInt(quantityInput.value);
+        const totalPrice = Math.round((selectedProductData.pricePer1000 / 1000) * qty);
+
+        const queryString = new URLSearchParams({
+            product_code: selectedProductData.code,
+            product_name: selectedProductData.name,
+            product_price: totalPrice, 
+            original_price_per_k_smm: selectedProductData.pricePer1000,
+            target_id: targetDataInput.value.trim(),
+            quantity_smm: qty,
+            service_type: 'sosmed',
+            note: selectedProductData.note,
+            min_smm: selectedProductData.min,
+            max_smm: selectedProductData.max
+        }).toString();
+        window.location.href = `/layanan/checkout?${queryString}`;
+    });
+    filterServices();
+    validateSelection();
+});
+</script>
+<%- include('../partials/footer') %>

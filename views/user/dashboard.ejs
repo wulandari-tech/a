@@ -1,0 +1,166 @@
+<%- include('../partials/header', { pageTitle: 'User Dashboard' }) %>
+
+<style>
+    .dashboard-card {
+        background-color: var(--card-bg-color);
+        border-radius: var(--border-radius-lg);
+        box-shadow: var(--box-shadow);
+        padding: 1.8rem;
+        margin-bottom: 1.8rem;
+        color: var(--text-color);
+    }
+    .dashboard-card .card-title {
+        color: var(--primary-color);
+        font-weight: 700;
+        margin-bottom: 1rem;
+    }
+    .dashboard-card .balance-amount {
+        font-size: 2.2rem;
+        font-weight: 800;
+        color: var(--success-color);
+    }
+    .quick-links .list-group-item {
+        background-color: transparent;
+        border-color: var(--border-color);
+        color: var(--text-color);
+        font-weight: 500;
+    }
+    .quick-links .list-group-item:hover {
+        background-color: rgba(122, 47, 219, 0.08);
+        color: var(--primary-hover-color);
+    }
+    .order-history-table th {
+        background-color: var(--primary-light);
+        color: var(--primary-color);
+    }
+</style>
+
+<div class="container py-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1 class="display-5 fw-bold">Selamat Datang, <%= user.username %>!</h1>
+    </div>
+    <hr class="mb-5">
+
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="dashboard-card text-center" data-aos="fade-up">
+                <i class="fas fa-wallet fa-3x text-primary mb-3"></i>
+                <h5 class="card-title">Saldo Anda</h5>
+                <p class="balance-amount">Rp <%= user.balance.toLocaleString('id-ID') %></p>
+                <div class="d-grid gap-2">
+                    <a href="/user/deposit" class="btn btn-primary btn-sm mt-2"><i class="fas fa-plus-circle"></i> Deposit Saldo</a>
+                    <a href="/user/withdraw" class="btn btn-outline-success btn-sm"><i class="fas fa-hand-holding-usd"></i> Tarik Saldo</a>
+                </div>
+            </div>
+            <div class="dashboard-card quick-links" data-aos="fade-up" data-aos-delay="100">
+                <h5 class="card-title"><i class="fas fa-link"></i> Akses Cepat</h5>
+                <ul class="list-group list-group-flush">
+                    <li class="list-group-item"><a href="/user/profile" class="text-decoration-none d-block"><i class="fas fa-user-circle me-2"></i> Profil Saya</a></li>
+                    <li class="list-group-item"><a href="/user/profile/edit" class="text-decoration-none d-block"><i class="fas fa-edit me-2"></i> Edit Profil & Password</a></li>
+                    <li class="list-group-item"><a href="/products" class="text-decoration-none d-block"><i class="fas fa-store me-2"></i> Beli Produk Toko</a></li>
+                    <li class="list-group-item"><a href="/layanan" class="text-decoration-none d-block"><i class="fas fa-bolt me-2"></i> Beli Layanan PPOB</a></li>
+                    <li class="list-group-item"><a href="/promotions" class="text-decoration-none d-block"><i class="fas fa-tags me-2"></i> Lihat Promosi</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            <div class="dashboard-card" data-aos="fade-up" data-aos-delay="200">
+                <h5 class="card-title"><i class="fas fa-history"></i> Riwayat Pesanan Terbaru</h5>
+                <% if(orders && orders.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm order-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Produk/Layanan</th>
+                                    <th>Total</th>
+                                    <th>Status</th>
+                                    <th>Tanggal</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% orders.slice(0, 5).forEach(order => { %>
+                                    <tr>
+                                        <td class="fw-medium"><%= order.productNameSnapshot || (order.product ? order.product.name : 'N/A') %></td>
+                                        <td>Rp <%= (typeof order.totalPrice === 'number' ? order.totalPrice.toLocaleString('id-ID') : 'N/A') %></td>
+                                        <td>
+                                            <span class="badge fs-08 py-1 px-2 text-uppercase 
+                                                <% if (['paid_with_balance', 'paid_with_gateway', 'completed', 'processing_pterodactyl', 'processing_vps', 'processing_game_topup', 'processing_transfer'].includes(order.status)) { %>bg-success<% } 
+                                                else if (order.status === 'pending_payment') { %>bg-warning text-dark<% } 
+                                                else { %>bg-danger<% } %>">
+                                                <%= order.status.replace(/_/g, ' ') %>
+                                            </span>
+                                        </td>
+                                        <td><small><%= new Date(order.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short'}) %></small></td>
+                                        <td>
+                                            <% if (order.productType && (order.productType.startsWith('game_') || order.productType === 'ppob_generic' || order.productType === 'transfer_fund')) { %>
+                                                <a href="/layanan/order/<%= order._id %>/status" class="btn btn-xs btn-outline-info" title="Status"><i class="fas fa-eye"></i></a>
+                                            <% } else if (order.status === 'pending_payment' && order.paymentGatewayDetails && order.paymentGatewayDetails.qrImageUrl) { %>
+                                                 <a href="/order/<%= order._id %>/payment" class="btn btn-xs btn-outline-warning" title="Bayar"><i class="fas fa-credit-card"></i></a>
+                                            <% } else if (order.status === 'processing_pterodactyl') { %>
+                                                 <a href="/order/<%= order._id %>/setup-ptero" class="btn btn-xs btn-outline-primary" title="Setup"><i class="fas fa-cogs"></i></a>
+                                            <% } else if (order.status === 'processing_vps') { %>
+                                                 <a href="/order/<%= order._id %>/setup-vps" class="btn btn-xs btn-outline-primary" title="Setup"><i class="fas fa-server"></i></a>
+                                            <% } else if (order.status === 'completed' && order.productType === 'app_premium') { %>
+                                                <a href="/user/profile#orders-content" class="btn btn-xs btn-outline-success" title="Lihat Detail di Profil"><i class="fas fa-star"></i></a>
+                                            <% } else { %>
+                                                <span class="text-muted">-</span>
+                                            <% } %>
+                                        </td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                    <% if (orders.length > 5) { %>
+                        <div class="text-center mt-2">
+                            <a href="/user/profile#orders-content" class="text-primary small">Lihat Semua Pesanan <i class="fas fa-angle-double-right"></i></a>
+                        </div>
+                    <% } %>
+                <% } else { %>
+                    <p class="text-muted text-center p-3">Anda belum memiliki riwayat pesanan.</p>
+                <% } %>
+            </div>
+
+            <div class="dashboard-card" data-aos="fade-up" data-aos-delay="300">
+                <h5 class="card-title"><i class="fas fa-wallet"></i> Riwayat Deposit Terbaru</h5>
+                <% if(deposits && deposits.length > 0) { %>
+                    <div class="table-responsive">
+                        <table class="table table-hover table-sm order-history-table">
+                            <thead>
+                                <tr>
+                                    <th>Metode</th>
+                                    <th>Diterima</th>
+                                    <th>Status</th>
+                                    <th>Tanggal</th>
+                                    <th>Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <% deposits.slice(0, 5).forEach(deposit => { %>
+                                    <tr>
+                                        <td><%= deposit.method %></td>
+                                        <td class="fw-medium">Rp <%= (typeof deposit.getBalance === 'number' ? deposit.getBalance.toLocaleString('id-ID') : 'N/A') %></td>
+                                        <td><span class="badge fs-08 py-1 px-2 text-uppercase bg-<%= deposit.status === 'success' ? 'success' : (deposit.status === 'pending' ? 'warning text-dark' : 'danger') %>"><%= deposit.status %></span></td>
+                                        <td><small><%= new Date(deposit.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short'}) %></small></td>
+                                        <td><a href="/user/deposit/status/<%= deposit._id %>" class="btn btn-xs btn-outline-info" title="Detail"><i class="fas fa-eye"></i></a></td>
+                                    </tr>
+                                <% }) %>
+                            </tbody>
+                        </table>
+                    </div>
+                     <% if (deposits.length > 5) { %>
+                        <div class="text-center mt-2">
+                            <a href="/user/profile#deposits-content" class="text-primary small">Lihat Semua Deposit <i class="fas fa-angle-double-right"></i></a>
+                        </div>
+                    <% } %>
+                <% } else { %>
+                    <p class="text-muted text-center p-3">Anda belum memiliki riwayat deposit.</p>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

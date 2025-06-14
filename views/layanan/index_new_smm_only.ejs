@@ -1,0 +1,30 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5 page-content-container nebula-service-page">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h1 class="display-5 fw-bold page-main-title"><i class="fas fa-hashtag me-3 text-primary"></i>Layanan Sosial Media <%= storeName %></h1>
+        <p class="lead text-muted col-md-8 mx-auto">
+            Tingkatkan interaksi dan popularitas akun sosial media Anda dengan layanan kami.
+        </p>
+    </div>
+    <div class="row g-4 justify-content-center">
+        <div class="col-md-6 col-lg-5" data-aos="fade-up" data-aos-delay="100">
+            <a href="/layanan/sosmed" class="card text-center text-decoration-none shadow-hover p-4 h-100">
+                <i class="fas fa-users fa-3x text-info mb-3"></i>
+                <h4 class="card-title">Layanan SMM (Followers, Likes, etc.)</h4>
+                <p class="card-text text-muted small">Pilih berbagai layanan untuk Instagram, TikTok, YouTube, dan lainnya dari provider terpercaya.</p>
+            </a>
+        </div>
+        <%# Jika Anda ingin menambahkan kategori layanan lain di masa depan, bisa diletakkan di sini %>
+        <%# Contoh:
+        <div class="col-md-6 col-lg-5" data-aos="fade-up" data-aos-delay="200">
+            <a href="/layanan/prabayar" class="card text-center text-decoration-none shadow-hover p-4 h-100">
+                <i class="fas fa-mobile-alt fa-3x text-primary mb-3"></i>
+                <h4 class="card-title">Layanan Prabayar</h4>
+                <p class="card-text text-muted small">Pulsa, Paket Data, dll. (Segera Hadir)</p>
+            </a>
+        </div>
+         %>
+    </div>
+</div>
+<style>.shadow-hover:hover{transform: translateY(-5px); box-shadow: 0 .5rem 1rem rgba(0,0,0,.15)!important;}</style>
+<%- include('../partials/footer') %>

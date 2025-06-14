@@ -1,0 +1,61 @@
+<%- include('../partials/header', { pageTitle: "Layanan PPOB" }) %>
+<div class="container py-md-5 page-content-container nebula-service-page">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h1 class="display-5 fw-bold page-main-title"><i class="fas fa-meteor me-3 text-primary"></i>Pilih Layanan PPOB</h1>
+        <p class="lead text-muted col-md-8 mx-auto">
+            Top Up Game favoritmu, isi saldo E-Wallet, transfer dana, dan kebutuhan digital lainnya dengan mudah, cepat, dan aman.
+        </p>
+    </div>
+
+    <% 
+    const serviceCategories = [
+        {
+            title: "Top Up Game",
+            icon: "fa-gamepad",
+            aosDelay: "100",
+            services: categories.games || []
+        },
+        {
+            title: "Top Up E-Wallet & Transfer Dana",
+            icon: "fa-wallet",
+            aosDelay: "200",
+            services: [
+                { categorySlug: 'e-wallet', slug: 'dana', banner: '/images/dana_logo.png', title: 'DANA TopUp' },
+                { categorySlug: 'e-wallet', slug: 'gopay', banner: '/images/gopay_logo.png', title: 'GoPay Customer' },
+                { categorySlug: 'e-wallet', slug: 'ovo', banner: '/images/ovo_logo.png', title: 'OVO TopUp' },
+                { categorySlug: 'e-wallet', slug: 'shopeepay', banner: '/images/shopeepay_logo.png', title: 'ShopeePay' },
+                { categorySlug: 'e-wallet', slug: 'linkaja', banner: '/images/linkaja_logo.png', title: 'LinkAja' },
+                { categorySlug: 'transfer', slug: 'bank-ewallet', banner: '/images/transfer_icon.png', title: 'Transfer Dana' }
+            ]
+        }
+        // Anda bisa menambahkan kategori lain di sini
+    ];
+    %>
+
+    <% serviceCategories.forEach(category => { %>
+        <% if (category.services && category.services.length > 0) { %>
+        <section class="service-category-section mb-5 pb-3" data-aos="fade-up" data-aos-delay="<%= category.aosDelay %>">
+            <h2 class="category-title mb-4">
+                <span><i class="fas <%= category.icon %> me-2 text-secondary"></i><%= category.title %></span>
+            </h2>
+            <div class="row row-cols-2 row-cols-sm-3 row-cols-md-4 row-cols-lg-5 g-3 g-md-4 justify-content-center">
+                <% category.services.forEach(service => { %>
+                    <div class="col d-flex">
+                        <a href="/layanan/<%= service.categorySlug %>/<%= service.slug %>" class="ppob-service-card w-100">
+                            <div class="ppob-service-card-image-wrapper">
+                                <img src="<%= service.banner %>" alt="<%= service.title %> Banner" class="ppob-service-card-img" 
+                                     onerror="this.onerror=null; this.src='/images/default_placeholder.png'; this.classList.add('img-error');">
+                            </div>
+                            <div class="ppob-service-card-body">
+                                <h6 class="ppob-service-card-title"><%= service.title %></h6>
+                            </div>
+                        </a>
+                    </div>
+                <% }) %>
+            </div>
+        </section>
+        <% } %>
+    <% }) %>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,134 @@
+<%- include('../partials/header') %>
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 text-center">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <i class="fas fa-server fa-3x text-info mb-3"></i>
+                    <h2 class="card-title">Setup VPS DigitalOcean</h2>
+                    <p class="lead">Pembayaran untuk <strong><%= product.name %></strong> berhasil!</p>
+                    <p>Silakan masukkan password root untuk VPS Anda. Pastikan password kuat.</p>
+                    <hr>
+                    <div id="vpsSetupFormContainer">
+                        <form id="vpsSetupForm">
+                            <input type="hidden" name="orderId" value="<%= order._id %>">
+                            <div class="mb-3 text-start">
+                                <label for="root_password" class="form-label">Password Root VPS:</label>
+                                <input type="password" class="form-control" id="root_password" name="root_password" minlength="8" required>
+                                <div class="form-text">Minimal 8 karakter, kombinasi huruf besar, huruf kecil, angka, dan simbol disarankan.</div>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg"><i class="fas fa-rocket"></i> Buat VPS Sekarang</button>
+                            </div>
+                        </form>
+                        <div id="vpsSetupMessage" class="mt-3"></div>
+                    </div>
+
+                    <div id="vpsSuccessContainer" style="display:none;">
+                        <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                        <h4>VPS Berhasil Dibuat!</h4>
+                        <p>Berikut adalah detail VPS Anda. Proses mendapatkan IP Address mungkin memerlukan beberapa saat.</p>
+                        <ul class="list-unstyled text-start mx-auto" style="max-width: 400px;">
+                            <li><strong>Hostname:</strong> <span id="successHostname"></span></li>
+                            <li><strong>IP Address:</strong> <span id="successIpAddress" class="fw-bold">Sedang diproses...</span></li>
+                            <li><strong>Username:</strong> root</li>
+                            <li><strong>Password:</strong> <span id="successRootPassword"></span></li>
+                            <li><strong>Spesifikasi:</strong> <%= product.digitalOceanVpsSpecs.size %>, <%= product.digitalOceanVpsSpecs.region %>, <%= product.digitalOceanVpsSpecs.osImage %></li>
+                        </ul>
+                        <p class="mt-3">Harap simpan detail ini dengan baik. IP Address akan muncul jika sudah tersedia.</p>
+                        <p class="mt-3"><a href="/user/profile" class="btn btn-primary"><i class="fas fa-user-circle"></i> Kembali ke Profil</a></p>
+                         <p class="mt-2 text-muted small">Jika IP Address tidak muncul setelah beberapa menit, Anda dapat memeriksanya kembali di detail pesanan pada halaman profil Anda, atau hubungi admin.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const vpsSetupForm = document.getElementById('vpsSetupForm');
+        const vpsSetupMessage = document.getElementById('vpsSetupMessage');
+        const vpsSetupFormContainer = document.getElementById('vpsSetupFormContainer');
+        const vpsSuccessContainer = document.getElementById('vpsSuccessContainer');
+        const successHostname = document.getElementById('successHostname');
+        const successIpAddress = document.getElementById('successIpAddress');
+        const successRootPassword = document.getElementById('successRootPassword');
+
+        if (vpsSetupForm) {
+            vpsSetupForm.addEventListener('submit', async function(event) {
+                event.preventDefault();
+                vpsSetupMessage.innerHTML = '<div class="spinner-border spinner-border-sm text-info" role="status"><span class="visually-hidden">Loading...</span></div> Membuat VPS, ini mungkin memakan waktu beberapa menit...';
+                const formData = new FormData(vpsSetupForm);
+                const data = Object.fromEntries(formData.entries());
+
+                try {
+                    const response = await fetch('/digitalocean/setup-vps', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data),
+                    });
+                    const result = await response.json();
+
+                    if (result.success) {
+                        vpsSetupMessage.innerHTML = '';
+                        vpsSetupFormContainer.style.display = 'none';
+                        vpsSuccessContainer.style.display = 'block';
+                        successHostname.textContent = result.hostname;
+                        successRootPassword.textContent = result.rootPassword;
+                        if (result.ipAddress && result.ipAddress !== "Sedang diproses...") {
+                             successIpAddress.textContent = result.ipAddress;
+                             successIpAddress.classList.remove('text-muted');
+                             successIpAddress.classList.add('text-success');
+                        } else {
+                            successIpAddress.textContent = "Sedang diproses... (cek profil nanti)";
+                            successIpAddress.classList.add('text-muted');
+                        }
+                        
+                        if (result.dropletId && (!result.ipAddress || result.ipAddress === "Sedang diproses...")) {
+                    
+                            // checkIpStatus(result.dropletId, 3, 30000); 
+                        }
+
+                    } else {
+                        vpsSetupMessage.innerHTML = `<div class="alert alert-danger">${result.message || 'Gagal membuat VPS.'}</div>`;
+                    }
+                } catch (error) {
+                    vpsSetupMessage.innerHTML = `<div class="alert alert-danger">Terjadi kesalahan jaringan atau server. Silakan coba lagi atau hubungi admin.</div>`;
+                    console.error('Error:', error);
+                }
+            });
+        }
+
+        // Fungsi polling IP sederhana (contoh, tidak direkomendasikan untuk produksi skala besar)
+        /*
+        async function checkIpStatus(dropletId, retriesLeft, interval) {
+            if (retriesLeft <= 0) {
+                successIpAddress.textContent = "Gagal dapat IP otomatis. Cek profil.";
+                successIpAddress.classList.add('text-danger');
+                return;
+            }
+            try {
+
+                // const statusResponse = await fetch(`/digitalocean/droplet-status/${dropletId}`); 
+                // const statusResult = await statusResponse.json();
+                // if (statusResult.success && statusResult.ipAddress && statusResult.ipAddress !== "Sedang diproses...") {
+                //     successIpAddress.textContent = statusResult.ipAddress;
+                //     successIpAddress.classList.remove('text-muted', 'text-danger');
+                //     successIpAddress.classList.add('text-success');
+                // } else {
+                //     setTimeout(() => checkIpStatus(dropletId, retriesLeft - 1, interval), interval);
+                // }
+            } catch (e) {
+                console.error("Polling error:", e);
+                setTimeout(() => checkIpStatus(dropletId, retriesLeft - 1, interval), interval);
+            }
+        }
+        */
+    });
+</script>
+
+<%- include('../partials/footer') %>

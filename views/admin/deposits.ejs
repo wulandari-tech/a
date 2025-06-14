@@ -1,0 +1,70 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2">Kelola Deposit</h1>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-striped table-sm">
+        <thead>
+            <tr>
+                <th>ID Internal</th>
+                <th>ID</th>
+                <th>Pengguna</th>
+                <th>Metode</th>
+                <th>Jumlah</th>
+                <th>Saldo Diterima</th>
+                <th>Status</th>
+                <th>Tanggal</th>
+                <th>Kadaluarsa</th>
+                <th>Saldo Diupdate?</th>
+                <th>Aksi</th>
+            </tr>
+        </thead>
+        <tbody>
+            <% if(deposits && deposits.length > 0) { %>
+                <% deposits.forEach(deposit => { %>
+                    <tr>
+                        <td><small><%= deposit.reffId %></small></td>
+                        <td><small><%= deposit.forestApiId || 'N/A' %></small></td>
+                        <td><%= deposit.user ? deposit.user.username : 'N/A' %></td>
+                        <td><%= deposit.method %></td>
+                        <td>Rp <%= deposit.amount.toLocaleString('id-ID') %></td>
+                        <td>Rp <%= deposit.getBalance.toLocaleString('id-ID') %></td>
+                        <td>
+                            <span class="badge bg-<%= deposit.status === 'success' ? 'success' : (deposit.status === 'pending' ? 'warning text-dark' : 'danger') %>">
+                                <%= deposit.status %>
+                            </span>
+                        </td>
+                        <td><%= new Date(deposit.createdAt).toLocaleString('id-ID', {dateStyle:'short', timeStyle:'short'}) %></td>
+                        <td><%= new Date(deposit.expiredAt).toLocaleString('id-ID', {dateStyle:'short', timeStyle:'short'}) %></td>
+                        <td>
+                            <span class="badge bg-<%= deposit.balanceUpdated ? 'success' : 'secondary' %>">
+                                <%= deposit.balanceUpdated ? 'Ya' : 'Belum' %>
+                            </span>
+                        </td>
+                        <td>
+                            <% if(deposit.status === 'pending' && !deposit.balanceUpdated) { %>
+                                <form action="/admin/deposits/approve/<%= deposit._id %>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menyetujui deposit ini secara manual dan menambahkan saldo ke pengguna? PASTIKAN PEMBAYARAN SUDAH VALID.');">
+                                    <button type="submit" class="btn btn-sm btn-success">Approve Manual</button>
+                                </form>
+                            <% } else if (deposit.status === 'success' && !deposit.balanceUpdated) { %>
+                                <form action="/admin/deposits/approve/<%= deposit._id %>" method="POST" class="d-inline" onsubmit="return confirm('Deposit ini sudah sukses tapi saldo belum terupdate. Update saldo sekarang?');">
+                                    <button type="submit" class="btn btn-sm btn-warning">Update Saldo</button>
+                                </form>
+                            <% } else { %>
+                                <button class="btn btn-sm btn-secondary" disabled>N/A</button>
+                            <% } %>
+                        </td>
+                    </tr>
+                <% }) %>
+            <% } else { %>
+                <tr>
+                    <td colspan="11" class="text-center">Belum ada data deposit.</td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
+</div>
+
+<%- include('../partials/footer') %>

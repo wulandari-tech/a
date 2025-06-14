@@ -1,0 +1,96 @@
+<%- include('../partials/header') %>
+<div class="container py-md-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/layanan"><i class="fas fa-store-alt me-1"></i>Layanan</a></li>
+            <% if (product && product.serviceCategorySlug && product.serviceSlug && product.serviceTitle) { %>
+                <li class="breadcrumb-item"><a href="/layanan/<%= product.serviceCategorySlug %>/<%= product.serviceSlug %>"><%= product.serviceTitle %></a></li>
+            <% } else { %>
+                <li class="breadcrumb-item">Detail Layanan</li>
+            <% } %>
+            <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+        </ol>
+    </nav>
+    <h2 class="mb-4 fw-bold">Checkout: <%= product.name || 'Layanan PPOB' %></h2>
+    <div class="row g-5">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary-light">
+                    <h4 class="mb-0 text-primary fw-semibold"><i class="fas fa-receipt me-2"></i>Detail Pesanan</h4>
+                </div>
+                <div class="card-body p-4">
+                    <p><strong>Layanan:</strong> <span class="fw-semibold"><%= product.name || 'Tidak diketahui' %></span></p>
+                    <% if (product.productIdLabel && product.targetId) { %>
+                        <p><strong><%= product.productIdLabel %>:</strong> <span class="fw-semibold"><%= product.targetId %></span></p>
+                    <% } %>
+                    <% if (product.needsZoneId && product.zoneId && product.zoneIdLabel) { %>
+                        <p><strong><%= product.zoneIdLabel %>:</strong> <span class="fw-semibold"><%= product.zoneId %></span></p>
+                    <% } %>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-5">Total Harga:</span>
+                        <span class="fs-4 fw-bold text-success">Rp <%= (product.price || 0).toLocaleString('id-ID') %></span>
+                    </div>
+                     <div class="mt-2 text-muted small">
+                        Harga sudah termasuk PPN (jika ada) dan biaya layanan dasar.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary-light">
+                     <h4 class="mb-0 text-primary fw-semibold"><i class="fas fa-credit-card me-2"></i>Pilih Metode Pembayaran</h4>
+                </div>
+                <div class="card-body p-4">
+                    <% if (product && product.code && product.name && product.price) { %>
+                    <form action="/layanan/order/item/process" method="POST">
+                        <input type="hidden" name="product_code" value="<%= product.code %>">
+                        <input type="hidden" name="product_name" value="<%= product.name %>">
+                        <input type="hidden" name="product_price" value="<%= product.price %>">
+                        <input type="hidden" name="target_id" value="<%= product.targetId %>">
+                        <input type="hidden" name="zone_id" value="<%= product.zoneId || '' %>">
+                        <input type="hidden" name="service_slug" value="<%= product.serviceSlug %>">
+                        <input type="hidden" name="service_category_slug" value="<%= product.serviceCategorySlug %>">
+                        
+                        <div class="form-check mb-3 p-3 border rounded hover-bg-light shadow-sm">
+                            <input class="form-check-input" type="radio" name="payment_method" id="payWithBalancePPOB" value="balance" <%= user && user.balance >= product.price ? 'checked' : 'disabled' %>>
+                            <label class="form-check-label w-100" for="payWithBalancePPOB">
+                                <strong class="d-block"><i class="fas fa-wallet me-2 text-success"></i> Bayar dengan Saldo Akun</strong>
+                                <span class="d-block small text-muted">Saldo Anda: Rp <%= (user ? user.balance : 0).toLocaleString('id-ID') %></span>
+                                <% if (!user || user.balance < product.price) { %>
+                                    <span class="d-block small text-danger">Saldo tidak mencukupi. <a href="/user/deposit">Deposit dulu</a>.</span>
+                                <% } %>
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3 p-3 border rounded hover-bg-light shadow-sm">
+                             <input class="form-check-input" type="radio" name="payment_method" id="payWithOrkutQrisPPOB" value="orkut_qris" <%= !user || user.balance < product.price ? 'checked' : '' %>>
+                            <label class="form-check-label w-100" for="payWithOrkutQrisPPOB">
+                                <strong class="d-block"><img src="/images/qris_logo.png" alt="QRIS" style="height: 20px; margin-right: 8px;"> Bayar dengan QRIS (Orkut)</strong>
+                                <span class="d-block small text-muted">
+                                    Nominal: Rp <%= product.price.toLocaleString('id-ID') %>.
+                                    <span class="text-primary">Fee Payment Gateway: <%= process.env.ORKUT_QRIS_FEE_PERCENTAGE || '0.7' %>% (mungkin ditambahkan saat pembayaran).</span>
+                                </span>
+                            </label>
+                        </div>
+                        <style>.hover-bg-light:hover{background-color: #f0f3f5!important; cursor: pointer;}</style>
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold">
+                                <i class="fas fa-shield-alt me-2"></i> Proses & Bayar
+                            </button>
+                        </div>
+                    </form>
+                    <% } else { %>
+                        <div class="alert alert-danger">
+                            <h5 class="alert-heading">Data Produk Tidak Lengkap!</h5>
+                            <p>Tidak dapat melanjutkan checkout karena informasi produk tidak lengkap. Silakan kembali dan pilih produk dengan benar.</p>
+                            <a href="/layanan" class="btn btn-outline-danger">Kembali ke Layanan</a>
+                        </div>
+                    <% } %>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<%- include('../partials/footer') %>

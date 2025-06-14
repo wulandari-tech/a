@@ -1,0 +1,376 @@
+<%- include('../partials/header', { pageTitle: "Home" }) %>
+
+<div class="container py-4">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h1 class="display-4 fw-bold mb-3"><%= storeName %></h1>
+        <p class="lead text-muted col-md-8 mx-auto">Solusi top-up game, layanan PPOB, VPS, Panel Pterodactyl, dan berbagai kebutuhan digital Anda dengan harga terbaik dan proses cepat.</p>
+        <a href="/layanan" class="btn btn-warning btn-lg shadow fw-bold pulse-animation mt-3">
+            <i class="fas fa-bolt me-2"></i> PPOB & Top Up Game Cepat!
+        </a>
+    </div>
+    <style>
+        .pulse-animation {
+            animation: pulse 1.8s infinite ease-in-out;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7); }
+            50% { transform: scale(1.05); box-shadow: 0 0 0 12px rgba(255, 193, 7, 0); }
+            100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(255, 193, 7, 0); }
+        }
+        .info-board {
+            background-color: var(--card-bg-color);
+            color: var(--text-color);
+            padding: 1.5rem;
+            border-radius: var(--border-radius-lg);
+        }
+        .info-board h4 i { color: var(--primary-color); }
+        .info-board ul { list-style: none; padding-left: 0; }
+        .info-board li { padding: 0.75rem 0; border-bottom: 1px solid var(--border-color); }
+        .info-board li:last-child { border-bottom: none; }
+        .info-board .text-muted { color: var(--text-light) !important; }
+        .quantity-input-group { max-width: 160px; }
+        .product-card-item .card-body { display: flex; flex-direction: column; }
+        .product-card-item .price, .product-card-item .product-reseller-price { margin-bottom: 0.5rem; }
+        .product-card-item .btn { margin-top: auto; }
+        .promoted-product-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: var(--danger-color);
+            color: white;
+            padding: 0.3em 0.6em;
+            font-size: 0.75rem;
+            border-radius: var(--border-radius);
+            z-index: 1;
+        }
+        .card-img-top-wrapper {
+            position: relative;
+            overflow: hidden;
+        }
+        .card-img-top-wrapper .card-img-top {
+            height: 180px; /* Atau tinggi yang Anda inginkan */
+            object-fit: cover; /* Atau 'contain' jika ingin gambar terlihat penuh */
+        }
+    </style>
+
+    <div class="info-board my-5 shadow" data-aos="fade-right">
+        <h4 class="mb-3 d-flex align-items-center"><i class="fas fa-bullhorn fa-fw me-2"></i>Papan Informasi
+            <span class="ms-auto badge bg-primary rounded-pill" id="infoBoardBadgeCount"><%= (typeof informationItems !== 'undefined' && Array.isArray(informationItems)) ? informationItems.length : 0 %></span>
+        </h4>
+        <ul class="list-unstyled" id="dynamicInfoBoard">
+            <% if (typeof informationItems !== 'undefined' && Array.isArray(informationItems) && informationItems.length > 0) { %>
+                <% informationItems.forEach(item => { %>
+                    <li class="py-2 border-bottom" data-item-id="<%= item._id %>">
+                        <strong class="text-<%= item.type === 'warning' ? 'warning' : (item.type === 'promo' ? 'success' : (item.type === 'maintenance' ? 'danger' : 'info')) %>">
+                            <i class="fas fa-<%= item.type === 'warning' ? 'exclamation-triangle' : (item.type === 'promo' ? 'gift' : (item.type === 'maintenance' ? 'tools' : 'info-circle')) %> me-2"></i><%= item.title %>:
+                        </strong>
+                        <span class="text-muted"><%- item.content %></span>
+                        <small class="d-block text-end text-muted fst-italic mt-1">- <%= new Date(item.createdAt).toLocaleDateString('id-ID', {day:'numeric', month:'short'}) %></small>
+                    </li>
+                <% }) %>
+            <% } else { %>
+                <li id="noInfoMessage" class="text-muted py-2"><i class="fas fa-comment-slash me-2"></i>Saat ini belum ada informasi terbaru.</li>
+            <% } %>
+        </ul>
+        <p class="text-muted small mt-2 text-end">Update terakhir: <span id="infoBoardLastUpdate"><%= new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' }) %></span></p>
+    </div>
+    
+    <% const promotedProducts = products.filter(p => p.isPromotedBySeller && p.promotionDetails && p.promotionDetails.title); %>
+    <% if (promotedProducts.length > 0) { %>
+    <div class="promotions-section my-5" data-aos="fade-up">
+        <h2 class="h3 fw-bold mb-4 text-center"><i class="fas fa-star text-warning me-2"></i>Promosi Seller Unggulan!</h2>
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+            <% promotedProducts.forEach((product, index) => { %>
+                <div class="col product-card-wrapper" data-aos="fade-up" data-aos-delay="<%= (index % 3) * 100 %>">
+                    <div class="card h-100 shadow-sm product-card-item border border-warning" data-product-id="<%= product._id %>" data-category="<%= product.category %>">
+                        <% if (product.promotionDetails.imageUrl) { %>
+                            <div class="card-img-top-wrapper">
+                                <img src="<%= product.promotionDetails.imageUrl %>" class="card-img-top" alt="Promosi <%= product.promotionDetails.title %>">
+                            </div>
+                        <% } %>
+                        <div class="card-body">
+                            <h5 class="card-title mb-1 text-primary"><%= product.promotionDetails.title %></h5>
+                            <p class="card-text small text-muted mb-2"><%= product.promotionDetails.description %></p>
+                            <hr class="my-2">
+                            <h6 class="mb-1">Produk: <%= product.name %></h6>
+                            <% if (currentUser && currentUser.isReseller && product.resellerPrice && product.resellerPrice < product.price) { %>
+                               <p class="card-text price text-decoration-line-through text-muted mb-0">Rp <%= product.price.toLocaleString('id-ID') %></p>
+                               <p class="product-reseller-price">Reseller: Rp <%= product.resellerPrice.toLocaleString('id-ID') %></p>
+                           <% } else { %>
+                               <p class="card-text price"><strong>Rp <%= product.price.toLocaleString('id-ID') %></strong></p>
+                           <% } %>
+                            <% if (currentUser) { %>
+                                <a href="/product/<%= product._id %>" class="btn btn-warning w-100 mt-auto"><i class="fas fa-shopping-cart me-1"></i> Lihat & Beli</a>
+                            <% } else { %>
+                                <a href="/login?returnTo=/product/<%= product._id %>" class="btn btn-outline-warning w-100 mt-auto"><i class="fas fa-sign-in-alt me-1"></i> Login untuk Lihat</a>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        </div>
+        <div class="text-center mt-3">
+            <a href="/promotions" class="btn btn-sm btn-outline-secondary">Lihat Semua Promosi <i class="fas fa-angle-double-right"></i></a>
+        </div>
+    </div>
+    <% } %>
+
+
+    <div class="row mb-4" data-aos="fade-up" data-aos-delay="100">
+        <div class="col-md-12">
+            <div class="card shadow-sm border-0">
+                <div class="card-body p-4">
+                    <h5 class="text-center text-primary mb-3 fw-bold"><i class="fas fa-search me-2"></i>Cari Produk Toko Kami</h5>
+                    <form action="/products" method="GET" class="row g-3 align-items-center">
+                        <div class="col-md-6">
+                            <label for="search" class="visually-hidden">Cari Produk</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-search text-primary"></i></span>
+                                <input type="text" class="form-control border-start-0" id="search" name="search" placeholder="Nama produk/layanan toko..." value="<%= typeof currentSearch !== 'undefined' ? currentSearch : '' %>">
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="category" class="visually-hidden">Kategori</label>
+                            <div class="input-group input-group-lg">
+                                <span class="input-group-text bg-light border-end-0"><i class="fas fa-filter text-primary"></i></span>
+                                <select class="form-select border-start-0" id="category" name="category">
+                                    <option value="all" <%= (typeof currentCategory !== 'undefined' && currentCategory === 'all') ? 'selected' : '' %>>Semua Kategori Toko</option>
+                                    <% if(typeof categories !== 'undefined' && Array.isArray(categories) && categories.length > 0) { %>
+                                        <% categories.forEach(cat => { %>
+                                            <option value="<%= cat %>" <%= (typeof currentCategory !== 'undefined' && currentCategory === cat) ? 'selected' : '' %>>
+                                                <%= cat.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                                            </option>
+                                        <% }) %>
+                                    <% } %>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="col-md-2 d-grid">
+                            <button type="submit" class="btn btn-primary btn-lg">CARI</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex justify-content-between align-items-center mb-4" data-aos="fade-up" data-aos-delay="200">
+        <h2 class="h3 fw-bold"><%= (typeof currentCategory !== 'undefined' && currentCategory !== 'all' && currentCategory !== '') ? currentCategory.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) : 'Produk & Layanan Toko' %></h2>
+        <span class="text-muted small"><%= (typeof products !== 'undefined' && Array.isArray(products)) ? products.filter(p => !p.isPromotedBySeller).length : 0 %> item ditemukan</span>
+    </div>
+
+    <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4">
+        <% if (typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) { %>
+            <% products.filter(p => !p.isPromotedBySeller).forEach((product, index) => { %>
+                <div class="col product-card-wrapper" data-aos="fade-up" data-aos-delay="<%= (index % 3) * 100 + 300 %>">
+                    <div class="card h-100 shadow-sm product-card-item" data-product-id="<%= product._id %>" data-category="<%= product.category %>">
+                        <% if (product.isPromotedBySeller && product.promotionDetails && product.promotionDetails.title) { %>
+                             <span class="promoted-product-badge"><i class="fas fa-star"></i> PROMO</span>
+                        <% } %>
+                        <div class="card-body">
+                            <h5 class="card-title mb-2"><%= product.name %></h5>
+                             <% if (currentUser && currentUser.isReseller && product.resellerPrice && product.resellerPrice < product.price) { %>
+                                <p class="card-text price text-decoration-line-through text-muted mb-0">Rp <%= product.price.toLocaleString('id-ID') %></p>
+                                <p class="product-reseller-price">Reseller: Rp <%= product.resellerPrice.toLocaleString('id-ID') %></p>
+                            <% } else { %>
+                                <p class="card-text price"><strong>Rp <%= product.price.toLocaleString('id-ID') %></strong></p>
+                            <% } %>
+                            <p class="card-text text-muted small mb-2">
+                                <i class="fas fa-tag me-1 text-primary"></i> <%= product.category.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()) %>
+                                <span class="ms-2"><i class="fas fa-box-open me-1 text-success"></i> Stok: 
+                                    <span class="fw-bold 
+                                        <%= product.stock > 0 ? 'text-success' : (product.stock === -1 ? 'text-info' : 'text-danger') %>">
+                                        <%= product.stock === -1 ? 'Tak Terbatas' : (product.stock > 0 ? (product.category === 'app_premium' && product.appPremiumDetails && product.appPremiumDetails.vccInfo ? product.appPremiumDetails.vccInfo.split('\n').map(line => line.trim()).filter(line => line.length > 0).length : product.stock) : 'Habis') %>
+                                    </span>
+                                </span>
+                            </p>
+                            <p class="card-text flex-grow-1 small text-secondary mb-2"><%= product.description.substring(0, 100) %><% if(product.description.length > 100) { %>...<% } %></p>
+                            
+                            <% 
+                            let currentStockForMax = product.stock;
+                            if (product.category === 'app_premium' && product.appPremiumDetails && product.appPremiumDetails.vccInfo) {
+                                currentStockForMax = product.appPremiumDetails.vccInfo.split('\n').map(line => line.trim()).filter(line => line.length > 0).length;
+                            }
+                            let isOutOfStock = false;
+                            if (product.stock !== -1 && currentStockForMax === 0) {
+                                isOutOfStock = true;
+                            }
+                            %>
+
+                            <% if (product.category === 'app_premium' && !isOutOfStock) { %>
+                                <div class="input-group input-group-sm my-2 quantity-input-group">
+                                    <span class="input-group-text">Jumlah:</span>
+                                    <input type="number" class="form-control product-quantity" value="1" min="1" 
+                                           max="<%= product.stock === -1 ? 99 : currentStockForMax %>" 
+                                           data-product-id="<%= product._id %>">
+                                </div>
+                            <% } %>
+
+                             <% if (currentUser) { %>
+                                <% if (!isOutOfStock) { %>
+                                    <a href="/product/<%= product._id %>" class="btn btn-primary w-100"><i class="fas fa-eye me-1"></i> Lihat & Beli</a>
+                                <% } else { %>
+                                    <button class="btn btn-secondary w-100" disabled><i class="fas fa-ban me-1"></i> Stok Habis</button>
+                                <% } %>
+                            <% } else { %>
+                                <a href="/login?returnTo=/product/<%= product._id %>" class="btn btn-outline-primary w-100"><i class="fas fa-sign-in-alt me-1"></i> Login untuk Beli</a>
+                            <% } %>
+                        </div>
+                         <% if (product.isSellerProduct && product.createdBy) { %>
+                            <div class="card-footer bg-light-subtle text-muted small py-1 px-2">
+                                <small>Dijual oleh: <a href="#" class="text-decoration-none"><%= product.createdBy.username %></a></small>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div class="col-12" data-aos="fade-up" data-aos-delay="300">
+                <div class="alert alert-info text-center p-5 shadow" role="alert">
+                    <i class="fas fa-info-circle fa-3x mb-3 text-primary"></i><br>
+                    <h4 class="alert-heading fw-bold">Produk Tidak Ditemukan</h4>
+                    <p>Belum ada produk yang cocok dengan kriteria pencarian atau filter Anda saat ini.</p>
+                    <% if ((typeof currentCategory !== 'undefined' && currentCategory !== 'all' && currentCategory !== '') || (typeof currentSearch !== 'undefined' && currentSearch !== '')) { %>
+                        <a href="/products" class="btn btn-outline-primary mt-2"><i class="fas fa-store me-1"></i>Lihat Semua Produk Toko</a>
+                    <% } %>
+                </div>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<script>
+    if (typeof io !== 'undefined') {
+        const socket = io();
+        const dynamicInfoBoard = document.getElementById('dynamicInfoBoard');
+        const infoBoardBadgeCount = document.getElementById('infoBoardBadgeCount');
+        const infoBoardLastUpdate = document.getElementById('infoBoardLastUpdate');
+
+        function renderNewInfoItem(newItem) {
+            const li = document.createElement('li');
+            li.className = 'py-2 border-bottom';
+            li.setAttribute('data-item-id', newItem._id); 
+            const itemType = newItem.type || 'info';
+            let iconClass = 'info-circle';
+            if (itemType === 'warning') iconClass = 'exclamation-triangle';
+            else if (itemType === 'promo') iconClass = 'gift';
+            else if (itemType === 'maintenance') iconClass = 'tools';
+            const creationDate = new Date(newItem.createdAt || Date.now());
+            const formattedDate = creationDate.toLocaleDateString('id-ID', {day:'numeric', month:'short'});
+            const tempDiv = document.createElement('div');
+            tempDiv.textContent = newItem.content;
+            const safeContent = tempDiv.innerHTML;
+            li.innerHTML = `
+                <strong class="text-${itemType === 'warning' ? 'warning' : (itemType === 'promo' ? 'success' : (itemType === 'maintenance' ? 'danger' : 'info'))}">
+                    <i class="fas fa-${iconClass} me-2"></i>${newItem.title}:
+                </strong>
+                <span class="text-muted">${safeContent}</span>
+                <small class="d-block text-end text-muted fst-italic mt-1">- ${formattedDate}</small>
+            `;
+            return li;
+        }
+
+        socket.on('newInfoBoardUpdate', (newItem) => {
+            if (!dynamicInfoBoard) return;
+            const noInfoMessageElement = document.getElementById('noInfoMessage');
+            if (noInfoMessageElement && noInfoMessageElement.parentNode === dynamicInfoBoard) {
+                dynamicInfoBoard.removeChild(noInfoMessageElement);
+            }
+            const existingItemElement = dynamicInfoBoard.querySelector(`li[data-item-id="${newItem._id}"]`);
+            if (existingItemElement) {
+                existingItemElement.remove(); 
+            }
+            const newLi = renderNewInfoItem(newItem);
+            if (dynamicInfoBoard.firstChild) {
+                dynamicInfoBoard.insertBefore(newLi, dynamicInfoBoard.firstChild);
+            } else {
+                dynamicInfoBoard.appendChild(newLi);
+            }
+            if (infoBoardBadgeCount) {
+                const currentBadgeCount = dynamicInfoBoard.querySelectorAll('li[data-item-id]').length;
+                infoBoardBadgeCount.textContent = currentBadgeCount;
+            }
+            if(infoBoardLastUpdate) {
+                infoBoardLastUpdate.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            }
+        });
+
+        socket.on('infoBoardItemDeleted', (deletedItem) => {
+            if (!dynamicInfoBoard) return;
+            const itemElement = dynamicInfoBoard.querySelector(`li[data-item-id="${deletedItem._id}"]`);
+            if (itemElement) {
+                itemElement.remove();
+            }
+            if (infoBoardBadgeCount) {
+                const currentBadgeCount = dynamicInfoBoard.querySelectorAll('li[data-item-id]').length;
+                infoBoardBadgeCount.textContent = currentBadgeCount;
+            }
+            if (dynamicInfoBoard && dynamicInfoBoard.children.length === 0 && !document.getElementById('noInfoMessage')) {
+                const noInfoLi = document.createElement('li');
+                noInfoLi.id = 'noInfoMessage';
+                noInfoLi.className = 'text-muted py-2';
+                noInfoLi.innerHTML = '<i class="fas fa-comment-slash me-2"></i>Saat ini belum ada informasi terbaru.';
+                dynamicInfoBoard.appendChild(noInfoLi);
+            }
+            if(infoBoardLastUpdate) {
+                infoBoardLastUpdate.textContent = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' });
+            }
+        });
+    }
+
+
+    document.querySelectorAll('.buy-now-btn').forEach(button => {
+        button.addEventListener('click', function(e) {
+            e.preventDefault();
+            const card = this.closest('.product-card-item');
+            const productId = card.dataset.productId;
+            const category = card.dataset.category;
+            let quantity = 1;
+
+            if (category === 'app_premium') {
+                const quantityInput = card.querySelector('.product-quantity');
+                if (quantityInput) {
+                    quantity = parseInt(quantityInput.value);
+                    if (isNaN(quantity) || quantity < 1) {
+                        quantity = 1;
+                    }
+                    const maxQuantity = parseInt(quantityInput.max);
+                     if (!isNaN(maxQuantity) && quantity > maxQuantity) {
+                        alert(`Jumlah maksimal untuk produk ini adalah ${maxQuantity}.`);
+                        quantityInput.value = maxQuantity;
+                        return; 
+                    }
+                }
+            }
+            window.location.href = `/checkout/${productId}?quantity=${quantity}`;
+        });
+    });
+
+    document.querySelectorAll('.product-quantity').forEach(input => {
+        input.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            const min = parseInt(this.min);
+            const max = parseInt(this.max);
+            if (isNaN(value) || value < min) {
+                this.value = min;
+            } else if (!isNaN(max) && value > max) {
+                 this.value = max;
+                 alert(`Jumlah maksimal untuk produk ini adalah ${max}.`);
+            }
+        });
+         input.addEventListener('keyup', function() { 
+            let value = parseInt(this.value);
+            const min = parseInt(this.min);
+            const max = parseInt(this.max);
+            if (this.value !== '' && !isNaN(value)) { 
+                if (value < min) {
+                } else if (!isNaN(max) && value > max) {
+                    this.value = max; 
+                    alert(`Jumlah maksimal untuk produk ini adalah ${max}.`);
+                }
+            }
+        });
+    });
+
+</script>
+<%- include('../partials/footer') %>

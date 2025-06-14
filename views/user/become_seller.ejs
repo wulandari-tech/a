@@ -1,0 +1,64 @@
+<%- include('../partials/header', { pageTitle: 'Jadi Seller di ' + storeName }) %>
+
+<div class="container py-md-5">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-7">
+            <div class="card shadow-lg border-0">
+                <div class="card-body p-4 p-md-5">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-store-alt fa-3x text-primary mb-3"></i>
+                        <h2 class="card-title">Bergabunglah Sebagai Seller!</h2>
+                        <p class="text-muted">Jual produk digital Anda (Aplikasi Premium, Katalog Lainnya) di platform kami dan jangkau lebih banyak pelanggan.</p>
+                    </div>
+
+                    <% if (currentUser.sellerApplicationStatus === 'pending') { %>
+                        <div class="alert alert-info text-center">
+                            <i class="fas fa-hourglass-half fa-2x mb-2"></i>
+                            <h5>Aplikasi Anda Sedang Ditinjau</h5>
+                            <p>Terima kasih telah mendaftar menjadi seller. Aplikasi Anda sedang kami tinjau. Kami akan memberitahu Anda hasilnya segera.</p>
+                            <a href="/user/profile" class="btn btn-outline-primary mt-2">Kembali ke Profil</a>
+                        </div>
+                    <% } else if (currentUser.sellerApplicationStatus === 'approved') { %>
+                         <div class="alert alert-success text-center">
+                            <i class="fas fa-check-circle fa-2x mb-2"></i>
+                            <h5>Anda Sudah Menjadi Seller!</h5>
+                            <p>Akun seller Anda sudah aktif. Anda dapat mulai mengelola produk Anda sekarang.</p>
+                            <a href="/seller/dashboard" class="btn btn-success mt-2">Ke Dashboard Seller</a>
+                        </div>
+                    <% } else if (currentUser.sellerApplicationStatus === 'rejected') { %>
+                         <div class="alert alert-danger text-center">
+                            <i class="fas fa-times-circle fa-2x mb-2"></i>
+                            <h5>Aplikasi Ditolak</h5>
+                            <p>Maaf, aplikasi Anda untuk menjadi seller sebelumnya telah ditolak. Silakan hubungi admin untuk informasi lebih lanjut jika Anda ingin mengajukan ulang.</p>
+                             <a href="/user/profile" class="btn btn-outline-secondary mt-2">Kembali ke Profil</a>
+                        </div>
+                    <% } else { %>
+                         <% if (!currentUser.isVerified) { %>
+                            <div class="alert alert-warning">
+                                <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Verifikasi Email Diperlukan</h5>
+                                <p>Untuk menjadi seller, Anda perlu memverifikasi alamat email Anda terlebih dahulu. Ini akan membantu kami memproses aplikasi Anda lebih cepat.</p>
+                                <form action="/user/resend-verification" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-warning">Kirim Ulang Email Verifikasi</button>
+                                </form>
+                                <hr>
+                            </div>
+                        <% } %>
+                        <form action="/user/become-seller" method="POST">
+                            <p class="text-muted small mb-3">Dengan mengklik tombol di bawah, Anda setuju dengan syarat dan ketentuan sebagai seller di <%= storeName %> (jika ada).</p>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary btn-lg">
+                                    <i class="fas fa-check-circle me-2"></i> Ajukan Diri Menjadi Seller
+                                </button>
+                            </div>
+                        </form>
+                    <% } %>
+                     <p class="mt-4 text-center text-muted small">
+                        <a href="/user/profile"><i class="fas fa-arrow-left"></i> Kembali ke Profil Saya</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

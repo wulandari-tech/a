@@ -1,0 +1,55 @@
+<%- include('../partials/header') %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-users me-2"></i>Kelola Pengguna</h1>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-user me-1"></i>Username</th>
+                        <th><i class="fas fa-envelope me-1"></i>Email</th>
+                        <th><i class="fas fa-wallet me-1"></i>Saldo</th>
+                        <th><i class="fas fa-user-tag me-1"></i>Role</th>
+                        <th><i class="fas fa-calendar-alt me-1"></i>Tanggal Daftar</th>
+                        <th class="text-center"><i class="fas fa-cogs me-1"></i>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(users && users.length > 0) { %>
+                        <% users.forEach(user => { %>
+                            <tr>
+                                <td class="fw-bold"><%= user.username %></td>
+                                <td><%= user.email %></td>
+                                <td>Rp <%= user.balance.toLocaleString('id-ID') %></td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= user.role === 'admin' ? 'danger' : 'info text-dark' %>">
+                                        <%= user.role %>
+                                    </span>
+                                </td>
+                                <td><small><%= new Date(user.createdAt).toLocaleDateString('id-ID') %></small></td>
+                                <td class="text-center table-action-buttons">
+                                    <a href="/admin/users/edit/<%= user._id %>" class="btn btn-sm btn-outline-primary" title="Edit Pengguna">
+                                        <i class="fas fa-user-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="6" class="text-center p-4 text-muted">
+                                <i class="fas fa-users-slash fa-2x mb-2"></i><br>
+                                Belum ada pengguna terdaftar.
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

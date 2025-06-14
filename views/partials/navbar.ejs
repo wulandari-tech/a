@@ -1,0 +1,187 @@
+<nav class="navbar navbar-expand-lg navbar-dark fixed-top">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+             <i class="fas fa-meteor fa-fw me-2"></i><%= storeName || "Nama Toko Default" %>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav" aria-controls="navbarNav" aria-expanded="false" aria-label="Toggle navigation">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                <% if (currentUser) { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= (typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('user dashboard')) ? 'active' : '' %>" href="/user/dashboard"><i class="fas fa-tachometer-alt fa-fw"></i>Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('live chat support') ? 'active' : '' %>" href="/chat"><i class="fas fa-comments fa-fw"></i>Live Chat</a>
+                    </li>
+                <% } %>
+                <li class="nav-item">
+                    <a class="nav-link <%= (typeof pageTitle !== 'undefined' && (pageTitle.toLowerCase().includes('produk') || pageTitle.toLowerCase().includes('home') || pageTitle.toLowerCase().includes('selamat datang'))) && (typeof pageTitle !== 'undefined' && !pageTitle.toLowerCase().includes('admin')) ? 'active' : '' %>" href="/products"><i class="fas fa-store fa-fw"></i>Produk Toko</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= (typeof pageTitle !== 'undefined' && (pageTitle.toLowerCase().includes('layanan') || pageTitle.toLowerCase().includes('game') || pageTitle.toLowerCase().includes('e-wallet') || pageTitle.toLowerCase().includes('transfer'))) ? 'active' : '' %>" href="/layanan"><i class="fas fa-bolt fa-fw"></i>Layanan PPOB</a>
+                </li>
+                 <li class="nav-item">
+                    <a class="nav-link <%= (typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('promosi')) ? 'active' : '' %>" href="/promotions"><i class="fas fa-tags fa-fw"></i>Promosi</a>
+                </li>
+                <% if (currentUser) { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= (typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('deposit')) && (typeof pageTitle !== 'undefined' && !pageTitle.toLowerCase().includes('admin')) ? 'active' : '' %>" href="/user/deposit"><i class="fas fa-coins fa-fw"></i>Deposit</a>
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link <%= (typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('penarikan dana')) && (typeof pageTitle !== 'undefined' && !pageTitle.toLowerCase().includes('admin')) ? 'active' : '' %>" href="/user/withdraw"><i class="fas fa-hand-holding-usd fa-fw"></i>Penarikan Dana</a>
+                    </li>
+                     <li class="nav-item">
+                        <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('profil saya') ? 'active' : '' %>" href="/user/profile">
+                            <i class="fas fa-user-astronaut fa-fw"></i>Profil
+                        </a>
+                    </li>
+                    <% if (currentUser.isSeller && currentUser.sellerApplicationStatus === 'approved') { %>
+                        <li class="nav-item">
+                            <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('seller dashboard') ? 'active' : '' %>" href="/seller/dashboard"><i class="fas fa-store-alt fa-fw"></i>Seller Dashboard</a>
+                        </li>
+                    <% } else if (!currentUser.isSeller && currentUser.sellerApplicationStatus !== 'pending' && currentUser.sellerApplicationStatus !== 'rejected') { %>
+                         <li class="nav-item">
+                            <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('jadi seller') ? 'active' : '' %>" href="/user/become-seller"><i class="fas fa-briefcase fa-fw"></i>Jadi Seller</a>
+                        </li>
+                    <% } %>
+                <% } %>
+                 <li class="nav-item">
+                    <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('dokumentasi') ? 'active' : '' %>" href="/docs"><i class="fas fa-book-open fa-fw"></i>Dokumentasi</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('papan informasi') && !pageTitle.toLowerCase().includes('admin') ? 'active' : '' %>" href="/info-board"><i class="fas fa-bullhorn fa-fw"></i>Info Board</a>
+                </li>
+                <% if (currentUser && currentUser.role === 'admin') { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('admin dashboard') ? 'active' : '' %>" href="/admin/dashboard"><i class="fas fa-user-shield fa-fw"></i>Admin Panel</a>
+                    </li>
+                <% } %>
+            </ul>
+            <ul class="navbar-nav">
+                <% if (currentUser) { %>
+                     <li class="nav-item me-lg-2">
+                        <span class="navbar-text text-white-50">
+                            Saldo: <strong class="text-white">Rp <%= currentUser.balance.toLocaleString('id-ID') %></strong>
+                        </span>
+                    </li>
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('profil') && !pageTitle.toLowerCase().includes('profil saya') ? 'active' : '' %>" href="#" id="navbarUserDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                            <i class="fas fa-user-circle fa-fw"></i> <%= currentUser.username %>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end animate slideIn" aria-labelledby="navbarUserDropdown">
+                            <li><a class="dropdown-item" href="/user/profile"><i class="fas fa-id-card fa-fw me-2"></i>Profil Saya</a></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item text-danger" href="/logout"><i class="fas fa-sign-out-alt fa-fw me-2"></i>Logout</a></li>
+                        </ul>
+                    </li>
+                <% } else { %>
+                    <li class="nav-item">
+                        <a class="nav-link <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('login') ? 'active' : '' %>" href="/login"><i class="fas fa-sign-in-alt fa-fw"></i>Login</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="btn btn-outline-light btn-sm ms-lg-2 mt-2 mt-lg-0 <%= typeof pageTitle !== 'undefined' && pageTitle.toLowerCase().includes('register') ? 'active' : '' %>" href="/register"><i class="fas fa-user-plus fa-fw"></i>Register</a>
+                    </li>
+                <% } %>
+            </ul>
+        </div>
+    </div>
+</nav>
+<style>
+    .dropdown-menu.animate {
+        animation-duration: 0.3s;
+        animation-fill-mode: both;
+    }
+    .dropdown-menu.slideIn {
+        animation-name: slideIn;
+    }
+    @keyframes slideIn {
+        0% {
+            transform: translateY(1rem);
+            opacity: 0;
+        }
+        100% {
+            transform:translateY(0rem);
+            opacity: 1;
+        }
+    }
+
+    /* Mobile Menu Styling */
+    @media (max-width: 991.98px) {
+        .navbar-collapse {
+            position: absolute; /* Diubah dari fixed agar tidak overlay seluruh halaman */
+            top: 100%; /* Muncul tepat di bawah navbar */
+            left: 0;
+            right: 0;
+            background-color: var(--dark-color); /* Warna background seperti navbar utama */
+            padding: 0.5rem 0; /* Padding atas bawah untuk keseluruhan menu */
+            border-top: 1px solid var(--glass-border-color);
+            box-shadow: 0 0.5rem 1rem rgba(0,0,0,0.15);
+            z-index: 1020;
+        }
+
+        .navbar-nav {
+            width: 100%;
+        }
+        .navbar-nav .nav-item {
+            width: 100%;
+        }
+        .navbar-nav .nav-link {
+            padding: 0.8rem 1.5rem; /* Padding untuk setiap item */
+            color: rgba(255,255,255,0.8) !important; /* Warna teks item menu */
+            border-bottom: 1px solid rgba(255,255,255,0.1); /* Garis pemisah */
+            font-weight: 500;
+        }
+        .navbar-nav .nav-link .fa-fw {
+            margin-right: 0.75rem !important;
+        }
+         .navbar-nav .nav-item:last-child .nav-link {
+            border-bottom: none;
+        }
+        .navbar-nav > .nav-item > .nav-link.active,
+        .navbar-nav > .nav-item > .nav-link:hover,
+        .navbar-nav > .nav-item > .nav-link:focus {
+             background-color: var(--primary-color) !important; /* Warna background item aktif/hover */
+             color: #fff !important;
+        }
+
+        .navbar-nav .dropdown-menu {
+            position: static !important;
+            float: none !important;
+            width: auto !important; /* Biarkan auto agar mengikuti parent */
+            margin-top: 0 !important;
+            background-color: transparent !important;
+            border: 0 !important;
+            box-shadow: none !important;
+            padding-left: 1.5rem; /* Indentasi untuk submenu */
+        }
+        .navbar-nav .dropdown-menu .dropdown-item {
+            padding: 0.6rem 1rem;
+            color: rgba(255,255,255,0.7);
+            font-size: 0.9rem;
+        }
+        .navbar-nav .dropdown-menu .dropdown-item:hover,
+        .navbar-nav .dropdown-menu .dropdown-item:focus {
+            background-color: rgba(255,255,255,0.1);
+            color: #fff;
+        }
+         .navbar-nav .dropdown-divider {
+            border-top-color: rgba(255,255,255,0.2);
+            margin-left: 1.5rem;
+            margin-right: 1.5rem;
+        }
+        
+        .navbar-nav > .nav-item.me-lg-2, 
+        .navbar-nav > .nav-item.dropdown { 
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+         .navbar-nav > .nav-item.me-lg-2 .navbar-text, 
+         .navbar-nav > .nav-item.dropdown .nav-link {
+            padding-left: 1.5rem;
+            padding-right: 1.5rem;
+         }
+    }
+</style>

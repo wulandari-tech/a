@@ -1,0 +1,270 @@
+<%- include('../partials/header') %>
+
+<div class="container py-md-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="mb-0 fw-bold"><i class="fas fa-id-card me-2"></i>Profil Saya</h2>
+        <a href="/user/profile/edit" class="btn btn-outline-primary btn-sm"><i class="fas fa-user-edit me-1"></i> Edit Profil</a>
+    </div>
+    <hr class="mb-5">
+    <div class="row g-4">
+        <div class="col-lg-4" data-aos="fade-right">
+            <div class="card profile-info-card shadow-sm text-center border-0">
+                <div class="card-body p-4">
+                    <img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.username) %>&background=7A2FDB&color=fff&size=120&rounded=true&font-size=0.4&bold=true" class="rounded-circle mb-3 shadow-sm" alt="Avatar">
+                    <h4 class="card-title fw-bold"><%= user.username %></h4>
+                    <p class="text-muted mb-1"><i class="fas fa-envelope me-1"></i> <%= user.email %></p>
+                     <p class="text-muted mb-2">
+                        <i class="fas fa-user-tag me-1"></i> 
+                        <%= user.role.charAt(0).toUpperCase() + user.role.slice(1) %>
+                        <% if (user.isReseller) { %> <span class="badge bg-info text-dark">Reseller</span> <% } %>
+                        <% if (user.isSeller && user.sellerApplicationStatus === 'approved') { %> <span class="badge bg-success">Seller Aktif</span> <% } %>
+                    </p>
+                    <p class="text-muted small"><i class="fas fa-calendar-alt me-1"></i> Bergabung: <%= new Date(user.createdAt).toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }) %></p>
+                    <hr>
+                    <p class="mb-2 text-muted">Saldo Saat Ini:</p>
+                    <h3 class="balance-display mb-3">Rp <%= user.balance.toLocaleString('id-ID') %></h3>
+                    <div class="d-grid gap-2">
+                        <a href="/user/deposit" class="btn btn-primary fw-bold"><i class="fas fa-plus-circle me-2"></i>DEPOSIT SALDO</a>
+                        <a href="/user/withdraw" class="btn btn-outline-success fw-bold"><i class="fas fa-hand-holding-usd me-2"></i>TARIK SALDO</a>
+                    </div>
+                </div>
+            </div>
+             <% if (currentUser && !currentUser.isVerified) { %>
+                <div class="alert alert-warning mt-3" data-aos="fade-right" data-aos-delay="50">
+                    <h5 class="alert-heading"><i class="fas fa-exclamation-triangle"></i> Email Belum Terverifikasi!</h5>
+                    <p>Silakan verifikasi alamat email Anda untuk mengaktifkan semua fitur akun, termasuk penarikan dana dan menjadi seller.</p>
+                    <form action="/user/resend-verification" method="POST">
+                        <button type="submit" class="btn btn-sm btn-warning">Kirim Ulang Email Verifikasi</button>
+                    </form>
+                </div>
+            <% } %>
+            <% if (currentUser && currentUser.isVerified && !currentUser.isSeller && currentUser.sellerApplicationStatus === 'none') { %>
+                 <div class="card mt-3" data-aos="fade-right" data-aos-delay="100">
+                    <div class="card-body text-center">
+                        <h6 class="card-title text-primary">Ingin Menjual Produk Anda?</h6>
+                        <p class="small text-muted">Daftar menjadi seller dan jangkau lebih banyak pelanggan!</p>
+                        <a href="/user/become-seller" class="btn btn-sm btn-outline-primary"><i class="fas fa-briefcase me-1"></i> Jadi Seller Sekarang</a>
+                    </div>
+                </div>
+            <% } else if (currentUser && currentUser.sellerApplicationStatus === 'pending') { %>
+                <div class="alert alert-info mt-3 small" data-aos="fade-right" data-aos-delay="100">
+                    <i class="fas fa-hourglass-half me-1"></i> Aplikasi seller Anda sedang ditinjau oleh admin.
+                </div>
+            <% } else if (currentUser && currentUser.sellerApplicationStatus === 'rejected') { %>
+                 <div class="alert alert-danger mt-3 small" data-aos="fade-right" data-aos-delay="100">
+                    <i class="fas fa-times-circle me-1"></i> Maaf, aplikasi seller Anda ditolak. Hubungi admin untuk info lebih lanjut.
+                </div>
+            <% } %>
+            <% if (currentUser && (currentUser.isSeller || currentUser.role === 'admin')) { %>
+                 <div class="card mt-3" data-aos="fade-right" data-aos-delay="150">
+                    <div class="card-header bg-light py-2">
+                        <h6 class="mb-0 text-primary small"><i class="fas fa-key me-2"></i>API Key Anda</h6>
+                    </div>
+                    <div class="card-body p-2 text-center">
+                        <% if (user.apiKey) { %>
+                            <input type="text" class="form-control form-control-sm text-center mb-1" value="<%= user.apiKey %>" readonly id="apiKeyInput">
+                            <button class="btn btn-xs btn-outline-secondary" onclick="copyApiKey()">Copy</button>
+                        <% } else { %>
+                            <p class="small text-muted mb-1">Anda belum memiliki API Key.</p>
+                        <% } %>
+                        <form action="/user/generate-apikey" method="POST" class="d-inline">
+                             <button type="submit" class="btn btn-xs btn-<%= user.apiKey ? 'warning' : 'success' %> ms-1" 
+                                    onclick="return confirm('<%= user.apiKey ? 'Yakin ingin membuat API Key baru? Key lama akan tidak valid.' : 'Buat API Key sekarang?' %>')">
+                                <i class="fas fa-<%= user.apiKey ? 'sync-alt' : 'plus-circle' %>"></i> <%= user.apiKey ? 'Regenerate' : 'Generate' %>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                <script>
+                    function copyApiKey() {
+                        var apiKeyInput = document.getElementById("apiKeyInput");
+                        apiKeyInput.select();
+                        apiKeyInput.setSelectionRange(0, 99999); 
+                        document.execCommand("copy");
+                        alert("API Key disalin: " + apiKeyInput.value);
+                    }
+                </script>
+            <% } %>
+        </div>
+        <div class="col-lg-8" data-aos="fade-left" data-aos-delay="100">
+            <ul class="nav nav-pills nav-fill mb-3" id="profileTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="orders-tab" data-bs-toggle="tab" data-bs-target="#orders-content" type="button" role="tab" aria-controls="orders-content" aria-selected="true"><i class="fas fa-history me-1"></i>Riwayat Pesanan</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="deposits-tab" data-bs-toggle="tab" data-bs-target="#deposits-content" type="button" role="tab" aria-controls="deposits-content" aria-selected="false"><i class="fas fa-wallet me-1"></i>Riwayat Deposit</button>
+                </li>
+                 <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="withdrawals-tab" data-bs-toggle="tab" data-bs-target="#withdrawals-content" type="button" role="tab" aria-controls="withdrawals-content" aria-selected="false"><i class="fas fa-money-bill-wave me-1"></i>Riwayat Penarikan</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="profileTabContent">
+                <div class="tab-pane fade show active" id="orders-content" role="tabpanel" aria-labelledby="orders-tab">
+                    <div class="card shadow-sm border-0">
+                        <div class="card-header bg-primary-light">
+                            <h5 class="mb-0 text-primary fw-semibold"><i class="fas fa-history me-2"></i>Riwayat Pesanan Toko & Layanan PPOB</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <% if(typeof orders !== 'undefined' && orders && orders.length > 0) { %>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col">ID</th>
+                                                <th scope="col">Produk/Layanan</th>
+                                                <th scope="col">Total</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Tanggal</th>
+                                                <th scope="col" class="text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% orders.forEach(order => { %>
+                                                <tr>
+                                                    <td><small class="text-muted">...<%= order._id.toString().slice(-6) %></small></td>
+                                                    <td class="fw-medium"><%= order.productNameSnapshot || (order.product ? order.product.name : 'N/A') %></td>
+                                                    <td>Rp <%= (typeof order.totalPrice === 'number' ? order.totalPrice.toLocaleString('id-ID') : 'N/A') %></td>
+                                                    <td>
+                                                        <span class="badge fs-08 py-2 px-2 text-uppercase 
+                                                            <% if (['paid_with_balance', 'paid_with_gateway', 'completed', 'processing_pterodactyl', 'processing_vps', 'processing_game_topup', 'processing_transfer'].includes(order.status)) { %>bg-success<% } 
+                                                            else if (order.status === 'pending_payment') { %>bg-warning text-dark<% } 
+                                                            else { %>bg-danger<% } %>">
+                                                            <%= order.status ? order.status.replace(/_/g, ' ') : 'N/A' %>
+                                                        </span>
+                                                    </td>
+                                                    <td><small><%= new Date(order.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) %></small></td>
+                                                    <td class="text-center">
+                                                        <% if (order.productType && (order.productType.startsWith('game_') || order.productType === 'ppob_generic' || order.productType === 'transfer_fund')) { %>
+                                                            <a href="/layanan/order/<%= order._id %>/status" class="btn btn-sm btn-outline-info" title="Lihat Status Order Layanan"><i class="fas fa-eye"></i></a>
+                                                        <% } else if (order.status === 'pending_payment' && order.paymentGatewayDetails && order.paymentGatewayDetails.qrImageUrl) { %>
+                                                             <a href="/order/<%= order._id %>/payment" class="btn btn-sm btn-outline-warning" title="Lanjutkan Pembayaran"><i class="fas fa-credit-card"></i></a>
+                                                        <% } else if (order.status === 'processing_pterodactyl') { %>
+                                                             <a href="/order/<%= order._id %>/setup-ptero" class="btn btn-sm btn-outline-primary" title="Setup Akun Panel"><i class="fas fa-cogs"></i></a>
+                                                        <% } else if (order.status === 'processing_vps') { %>
+                                                             <a href="/order/<%= order._id %>/setup-vps" class="btn btn-sm btn-outline-primary" title="Setup VPS"><i class="fas fa-server"></i></a>
+                                                        <% } else { %>
+                                                            <span class="text-muted">-</span>
+                                                        <% } %>
+                                                    </td>
+                                                </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } else { %>
+                                <p class="text-center text-muted p-4 my-3"><i class="fas fa-shopping-bag fa-2x mb-2 d-block"></i>Anda belum memiliki riwayat pesanan.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="deposits-content" role="tabpanel" aria-labelledby="deposits-tab">
+                     <div class="card shadow-sm border-0">
+                        <div class="card-header bg-primary-light">
+                            <h5 class="mb-0 text-primary fw-semibold"><i class="fas fa-wallet me-2"></i>Riwayat Deposit</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <% if(typeof deposits !== 'undefined' && deposits && deposits.length > 0) { %>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col">ID Ref</th>
+                                                <th scope="col">Metode</th>
+                                                <th scope="col">Diterima</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Tanggal</th>
+                                                <th scope="col" class="text-center">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% deposits.forEach(deposit => { %>
+                                                <tr>
+                                                    <td><small class="text-muted"><%= deposit.reffId %></small></td>
+                                                    <td><%= deposit.method %></td>
+                                                    <td class="fw-medium">Rp <%= (typeof deposit.getBalance === 'number' ? deposit.getBalance.toLocaleString('id-ID') : 'N/A') %></td>
+                                                    <td><span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= deposit.status === 'success' ? 'success' : (deposit.status === 'pending' ? 'warning text-dark' : 'danger') %>"><%= deposit.status %></span></td>
+                                                    <td><small><%= new Date(deposit.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) %></small></td>
+                                                    <td class="text-center"><a href="/user/deposit/status/<%= deposit._id %>" class="btn btn-sm btn-outline-info" title="Lihat Detail Deposit"><i class="fas fa-eye"></i></a></td>
+                                                </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } else { %>
+                                <p class="text-center text-muted p-4 my-3"><i class="fas fa-search-dollar fa-2x mb-2 d-block"></i>Anda belum memiliki riwayat deposit.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="withdrawals-content" role="tabpanel" aria-labelledby="withdrawals-tab">
+                     <div class="card shadow-sm border-0">
+                        <div class="card-header bg-primary-light">
+                            <h5 class="mb-0 text-primary fw-semibold"><i class="fas fa-money-bill-wave me-2"></i>Riwayat Penarikan Dana</h5>
+                        </div>
+                        <div class="card-body p-0">
+                            <% if(typeof withdrawals !== 'undefined' && withdrawals && withdrawals.length > 0) { %>
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle mb-0">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th scope="col">ID</th>
+                                                <th scope="col">Jumlah</th>
+                                                <th scope="col">Metode</th>
+                                                <th scope="col">Status</th>
+                                                <th scope="col">Tanggal</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <% withdrawals.forEach(wd => { %>
+                                                <tr>
+                                                    <td><small class="text-muted">...<%= wd._id.toString().slice(-6) %></small></td>
+                                                    <td class="fw-medium">Rp <%= (typeof wd.amount === 'number' ? wd.amount.toLocaleString('id-ID') : 'N/A') %></td>
+                                                    <td><%= wd.method %> - <%= wd.accountNumber %> (A/N: <%= wd.accountHolderName %>)</td>
+                                                    <td>
+                                                        <span class="badge fs-08 py-2 px-2 text-uppercase 
+                                                            <% if (wd.status === 'completed' || wd.status === 'approved') { %>bg-success<% } 
+                                                            else if (wd.status === 'pending') { %>bg-warning text-dark<% } 
+                                                            else { %>bg-danger<% } %>">
+                                                            <%= wd.status %>
+                                                        </span>
+                                                    </td>
+                                                    <td><small><%= new Date(wd.createdAt).toLocaleDateString('id-ID', {day:'2-digit',month:'short',year:'numeric'}) %></small></td>
+                                                </tr>
+                                            <% }) %>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            <% } else { %>
+                                <p class="text-center text-muted p-4 my-3"><i class="fas fa-funnel-dollar fa-2x mb-2 d-block"></i>Anda belum memiliki riwayat penarikan.</p>
+                            <% } %>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    .badge.fs-08 { font-size: 0.78rem !important; }
+    .btn-xs { padding: 0.2rem 0.4rem; font-size: 0.75rem; }
+</style>
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var hash = window.location.hash;
+        if (hash) {
+            var tab = document.querySelector('.nav-pills button[data-bs-target="' + hash + '"]');
+            if (tab) {
+                var tabInstance = new bootstrap.Tab(tab);
+                tabInstance.show();
+            }
+        } else {
+            var firstTabEl = document.querySelector('#profileTab button[data-bs-toggle="tab"]');
+            if (firstTabEl) {
+                var firstTab = new bootstrap.Tab(firstTabEl);
+                firstTab.show();
+            }
+        }
+    });
+</script>
+<%- include('../partials/footer') %>

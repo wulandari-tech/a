@@ -1,0 +1,30 @@
+<%- include('../partials/header') %>
+
+<div class="container py-5 text-center">
+    <div class="row justify-content-center">
+        <div class="col-md-8 col-lg-6">
+            <i class="fas fa-bomb fa-5x text-danger mb-4"></i>
+            <h1 class="display-4 fw-bold">Oops! Terjadi Kesalahan Server</h1>
+            <p class="lead text-muted mb-4">
+                Maaf, kami mengalami sedikit masalah teknis. Tim kami sedang berusaha memperbaikinya.
+            </p>
+            <% if (process.env.NODE_ENV !== 'production' && typeof error !== 'undefined' && error.message) { %>
+                <div class="alert alert-danger text-start">
+                    <strong>Detail Error (Hanya untuk Development):</strong>
+                    <pre style="white-space: pre-wrap; word-wrap: break-word;"><%= error.message %></pre>
+                    <% if (error.stack) { %>
+                        <details>
+                            <summary>Stack Trace</summary>
+                            <pre style="font-size: 0.8em; white-space: pre-wrap; word-wrap: break-word;"><%= error.stack %></pre>
+                        </details>
+                    <% } %>
+                </div>
+            <% } %>
+            <div class="d-grid gap-2 d-sm-flex justify-content-sm-center">
+                <a href="/" class="btn btn-primary btn-lg px-4 gap-3"><i class="fas fa-home me-2"></i>Kembali ke Beranda</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

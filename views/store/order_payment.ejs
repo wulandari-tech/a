@@ -1,0 +1,229 @@
+<%- include('../partials/header', { pageTitle: `Pembayaran Order #${order._id.toString().slice(-8)}` }) %>
+
+<div class="container py-md-5">
+    <h2 class="mb-4"><i class="fas fa-qrcode me-2"></i>Selesaikan Pembayaran Pesanan</h2>
+    <hr class="mb-5">
+    <div class="card shadow-lg border-0">
+        <div class="card-header bg-primary-light">
+            <h5 class="mb-0 text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Detail Pembayaran untuk Order #<%= order._id.toString().slice(-8) %></h5>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <p class="lead">Produk: <strong><%= order.product ? order.product.name : (order.productNameSnapshot || 'Tidak Diketahui') %></strong></p>
+            <% if (order.paymentGatewayDetails && typeof order.paymentGatewayDetails.amountToPay === 'number') { %>
+                <p>Total yang harus dibayar: <strong class="fs-4 text-success">Rp <%= order.paymentGatewayDetails.amountToPay.toLocaleString('id-ID') %></strong></p>
+            <% } else { %>
+                <p>Total yang harus dibayar: <strong class="fs-4 text-danger">Informasi tidak tersedia</strong></p>
+            <% } %>
+            <p class="text-muted small">Metode: <%= order.paymentGatewayDetails && order.paymentGatewayDetails.gateway ? order.paymentGatewayDetails.gateway.replace('_', ' ') : 'N/A' %></p>
+
+            <% if (order.paymentGatewayDetails && order.paymentGatewayDetails.qrImageUrl && order.status === 'pending_payment') { %>
+                <div class="text-center my-4 p-4 border rounded bg-light shadow-sm">
+                    <h4 class="mb-3 text-primary"><i class="fas fa-qrcode me-2"></i>Scan QR Code Berikut</h4>
+                    <div class="qr-code-container" style="max-width: 300px; margin:auto;">
+                        <img src="<%= order.paymentGatewayDetails.qrImageUrl %>" alt="QR Code Pembayaran" class="img-fluid">
+                    </div>
+                     <% if (order.paymentGatewayDetails.expiredAt) { %>
+                        <p class="fw-bold text-danger fs-09 mt-3">
+                            PENTING: Lakukan pembayaran sebelum <%= new Date(order.paymentGatewayDetails.expiredAt).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'}) %>.
+                        </p>
+                    <% } %>
+                </div>
+            <% } else if (order.status === 'pending_payment') { %>
+                <div class="alert alert-warning">Detail pembayaran QRIS tidak tersedia saat ini. Silakan coba lagi atau hubungi admin.</div>
+            <% } %>
+            
+            <div id="paymentStatusMessage" class="mt-3"></div>
+
+            <div class="mt-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <a href="/user/profile" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali ke Profil</a>
+                <% if (order.status === 'pending_payment') { %>
+                <button class="btn btn-info" id="checkStatusBtn" data-orderid="<%= order._id %>">
+                    <i class="fas fa-sync-alt me-2"></i>Saya Sudah Bayar, Cek Status
+                </button>
+                <% } %>
+            </div>
+            <p class="text-center text-muted small mt-4">
+                Setelah pembayaran berhasil, status order akan otomatis terupdate.
+            </p>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="paymentSuccessModal" tabindex="-1" aria-labelledby="paymentSuccessModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header border-0">
+        <h5 class="modal-title" id="paymentSuccessModalLabel">Pembayaran Berhasil!</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body text-center p-4">
+        <i class="fas fa-check-circle fa-5x text-success mb-3"></i>
+        <p id="paymentSuccessMessage">Pesanan Anda sedang diproses.</p>
+        <div id="nextStepContainer" class="mt-3">
+        </div>
+        <a href="/user/profile" class="btn btn-primary mt-3">Lihat Riwayat Pesanan</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="appPremiumDetailsModal" tabindex="-1" aria-labelledby="appPremiumDetailsModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content">
+      <div class="modal-header bg-success text-white border-0">
+        <h5 class="modal-title" id="appPremiumDetailsModalLabel"><i class="fas fa-star me-2"></i>Detail Produk Aplikasi Premium Anda</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body p-4">
+        <p>Terima kasih! Pembayaran untuk produk premium Anda telah berhasil.</p>
+        <div id="appPremiumVccInfoContainer" style="display:none;">
+            <h6>Informasi VCC/Akun:</h6>
+            <pre class="bg-light p-2 rounded small"><code id="appPremiumVccInfo"></code></pre>
+        </div>
+        <div id="appPremiumFileUrlContainer" style="display:none;" class="mt-3">
+            <h6>Link Download Aplikasi:</h6>
+            <p><a id="appPremiumFileUrl" href="#" target="_blank" class="btn btn-info btn-sm"><i class="fas fa-download me-1"></i> Download File</a></p>
+        </div>
+        <div id="appPremiumDeliveryInstructionsContainer" class="mt-3">
+            <h6>Instruksi Pengiriman/Aktivasi:</h6>
+            <p id="appPremiumDeliveryInstructions" class="text-muted"></p>
+        </div>
+      </div>
+      <div class="modal-footer border-0">
+        <a href="/user/profile" class="btn btn-primary">Ke Profil Saya</a>
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkStatusBtn = document.getElementById('checkStatusBtn');
+    const paymentStatusMessageEl = document.getElementById('paymentStatusMessage');
+    const orderId = checkStatusBtn ? checkStatusBtn.dataset.orderid : null;
+    
+    const paymentSuccessModalEl = document.getElementById('paymentSuccessModal');
+    const paymentSuccessModal = paymentSuccessModalEl ? new bootstrap.Modal(paymentSuccessModalEl) : null;
+    const paymentSuccessMessageEl = document.getElementById('paymentSuccessMessage');
+    const nextStepContainerEl = document.getElementById('nextStepContainer');
+
+    const appPremiumDetailsModalEl = document.getElementById('appPremiumDetailsModal');
+    const appPremiumDetailsModal = appPremiumDetailsModalEl ? new bootstrap.Modal(appPremiumDetailsModalEl) : null;
+    const appPremiumVccInfoEl = document.getElementById('appPremiumVccInfo');
+    const appPremiumVccInfoContainerEl = document.getElementById('appPremiumVccInfoContainer');
+    const appPremiumFileUrlEl = document.getElementById('appPremiumFileUrl');
+    const appPremiumFileUrlContainerEl = document.getElementById('appPremiumFileUrlContainer');
+    const appPremiumDeliveryInstructionsEl = document.getElementById('appPremiumDeliveryInstructions');
+    const appPremiumDeliveryInstructionsContainerEl = document.getElementById('appPremiumDeliveryInstructionsContainer');
+
+
+    let checkInterval;
+    let isChecking = false;
+
+    async function checkPayment() {
+        if (!orderId || isChecking) return;
+        isChecking = true;
+        if(checkStatusBtn) {
+            checkStatusBtn.disabled = true;
+            checkStatusBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span> Mengecek...';
+        }
+        if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = '';
+
+        try {
+            const response = await fetch(`/order/${orderId}/check-status`);
+            const result = await response.json();
+
+            if (result.success && (result.status === 'paid_with_gateway' || result.status === 'processing_pterodactyl' || result.status === 'processing_vps' || result.status === 'completed')) {
+                if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = `<div class="alert alert-success">${result.message || 'Pembayaran berhasil!'}</div>`;
+                if(checkInterval) clearInterval(checkInterval);
+                
+                if (result.productCategory === 'app_premium' && result.appPremiumDetails && appPremiumDetailsModal) {
+                    if(appPremiumVccInfoEl && result.appPremiumDetails.vccInfo) {
+                        appPremiumVccInfoEl.textContent = result.appPremiumDetails.vccInfo;
+                        if(appPremiumVccInfoContainerEl) appPremiumVccInfoContainerEl.style.display = 'block';
+                    } else if (appPremiumVccInfoContainerEl) {
+                        appPremiumVccInfoContainerEl.style.display = 'none';
+                    }
+                    if(appPremiumFileUrlEl && result.appPremiumDetails.fileUrl) {
+                        appPremiumFileUrlEl.href = result.appPremiumDetails.fileUrl;
+                        appPremiumFileUrlEl.textContent = result.appPremiumDetails.fileUrl;
+                        if(appPremiumFileUrlContainerEl) appPremiumFileUrlContainerEl.style.display = 'block';
+                    } else if (appPremiumFileUrlContainerEl) {
+                        appPremiumFileUrlContainerEl.style.display = 'none';
+                    }
+                    if(appPremiumDeliveryInstructionsEl && result.appPremiumDetails.deliveryInstructions) {
+                        appPremiumDeliveryInstructionsEl.innerHTML = result.appPremiumDetails.deliveryInstructions.replace(/\n/g, '<br>');
+                         if(appPremiumDeliveryInstructionsContainerEl) appPremiumDeliveryInstructionsContainerEl.style.display = 'block';
+                    } else if (appPremiumDeliveryInstructionsContainerEl) {
+                         appPremiumDeliveryInstructionsContainerEl.style.display = 'none';
+                    }
+                    appPremiumDetailsModal.show();
+                } else {
+                    if(paymentSuccessMessageEl) paymentSuccessMessageEl.textContent = result.message || 'Pesanan Anda berhasil dan sedang diproses.';
+                    if(nextStepContainerEl) nextStepContainerEl.innerHTML = '';
+
+                    if (result.status === 'processing_pterodactyl') {
+                         if(nextStepContainerEl) nextStepContainerEl.innerHTML = `<a href="/order/${orderId}/setup-ptero" class="btn btn-success">Lanjutkan ke Setup Panel</a>`;
+                         if(paymentSuccessMessageEl) paymentSuccessMessageEl.textContent = 'Pembayaran berhasil! Silakan lanjutkan ke setup akun panel Anda.';
+                    } else if (result.status === 'processing_vps') {
+                         if(nextStepContainerEl) nextStepContainerEl.innerHTML = `<a href="/order/${orderId}/setup-vps" class="btn btn-success">Lanjutkan ke Setup VPS</a>`;
+                         if(paymentSuccessMessageEl) paymentSuccessMessageEl.textContent = 'Pembayaran berhasil! Silakan lanjutkan ke setup VPS Anda.';
+                    }
+                    
+                    if (paymentSuccessModal) paymentSuccessModal.show();
+                }
+
+            } else if (result.success && result.status === 'pending_payment') {
+                 if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = `<div class="alert alert-info">${result.message || 'Pembayaran masih pending. Silakan tunggu atau coba lagi.'}</div>`;
+            } else {
+                if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = `<div class="alert alert-warning">${result.message || 'Gagal memeriksa status atau pembayaran belum dikonfirmasi.'}</div>`;
+            }
+        } catch (error) {
+            if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = '<div class="alert alert-danger">Terjadi kesalahan jaringan saat memeriksa status.</div>';
+            console.error('Error checking payment status:', error);
+        } finally {
+            if(checkStatusBtn) {
+                checkStatusBtn.disabled = false;
+                checkStatusBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Saya Sudah Bayar, Cek Status';
+            }
+            isChecking = false;
+        }
+    }
+
+    if (checkStatusBtn) {
+        checkStatusBtn.addEventListener('click', checkPayment);
+        
+        let pollCount = 0;
+        const maxPolls = 20; 
+        const initialOrderData = <%- JSON.stringify(order) %>;
+
+        if (initialOrderData && initialOrderData.paymentGatewayDetails && initialOrderData.paymentGatewayDetails.qrImageUrl && initialOrderData.status === 'pending_payment') {
+             if(paymentStatusMessageEl) paymentStatusMessageEl.innerHTML = '<div class="alert alert-info small p-2">Status pembayaran akan dicek otomatis secara berkala...</div>';
+             checkInterval = setInterval(async () => {
+                if(document.hidden) return; 
+
+                const currentStatusDiv = paymentStatusMessageEl ? paymentStatusMessageEl.querySelector('.alert-success, .alert-danger') : null;
+                if (currentStatusDiv) {
+                    clearInterval(checkInterval);
+                    return;
+                }
+
+                if (pollCount < maxPolls) {
+                    if (!isChecking) { 
+                         await checkPayment(); 
+                    }
+                    pollCount++;
+                } else {
+                    clearInterval(checkInterval);
+                    if(paymentStatusMessageEl && !paymentStatusMessageEl.querySelector('.alert-success, .alert-danger')) {
+                        paymentStatusMessageEl.innerHTML = '<div class="alert alert-warning small p-2">Pengecekan otomatis selesai. Jika sudah bayar dan status belum berubah, silakan klik tombol cek status manual.</div>';
+                    }
+                }
+            }, 15000); 
+        }
+    }
+});
+</script>
+<%- include('../partials/footer') %>

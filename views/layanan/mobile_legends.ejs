@@ -1,0 +1,133 @@
+<%- include('../partials/header') %>
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <img src="/images/ml_banner.jpg" alt="Mobile Legends Banner" class="img-fluid rounded mb-3" style="max-height: 250px;"> 
+        <h1 class="display-5 fw-bold">Top Up Diamond Mobile Legends</h1>
+        <p class="lead text-muted">Pilih nominal top up, masukkan User ID dan Zone ID Anda.</p>
+    </div>
+
+    <form id="mlOrderForm" class="card shadow-sm p-4 mb-5">
+        <h4 class="text-primary mb-3"><i class="fas fa-user-circle me-2"></i>Masukkan Data Akun Mobile Legends</h4>
+        <div class="row g-3 mb-3">
+            <div class="col-md-6">
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="game_user_id" name="game_user_id" placeholder="User ID" required pattern="\d+">
+                    <label for="game_user_id">User ID</label>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="form-floating">
+                    <input type="text" class="form-control" id="game_zone_id" name="game_zone_id" placeholder="Zone ID (Opsional)" pattern="\d*">
+                    <label for="game_zone_id">Zone ID (Contoh: 1234)</label>
+                </div>
+            </div>
+        </div>
+        <small class="form-text text-muted mb-3">Pastikan User ID dan Zone ID yang Anda masukkan sudah benar. Kesalahan input bukan tanggung jawab kami.</small>
+    </form>
+
+    <% const displayProducts = (title, products, type) => { %>
+        <% if (products && products.length > 0) { %>
+            <div class="mb-5">
+                <h3 class="mb-4"><i class="fas fa-gem me-2 text-info"></i><%= title %></h3>
+                <div class="row row-cols-2 row-cols-md-3 row-cols-lg-4 g-3">
+                    <% products.forEach(item => { %>
+                        <div class="col">
+                            <label class="card h-100 product-select-card game-product-card">
+                                <input type="radio" name="selected_product" class="d-none" 
+                                       data-code="<%= item.code %>" 
+                                       data-name="<%= item.name %>" 
+                                       data-price="<%= item.price %>">
+                                <div class="card-body text-center d-flex flex-column justify-content-center">
+                                    <h6 class="card-title small"><%= item.name %></h6>
+                                    <p class="card-text fw-bold text-success mb-0">Rp <%= item.price.toLocaleString('id-ID') %></p>
+                                    <small class="text-muted note-text"><%= item.note.substring(0,50) %><% if(item.note.length > 50) { %>...<% } %></small>
+                                </div>
+                            </label>
+                        </div>
+                    <% }) %>
+                </div>
+            </div>
+        <% } %>
+    <% } %>
+
+    <div id="productSelectionContainer">
+        <% displayProducts('Pilih Diamond', diamonds, 'diamond'); %>
+        <% displayProducts('Pilih Starlight Member', starlight, 'starlight'); %>
+        <% displayProducts('Pilih Weekly Diamond Pass', weeklyPass, 'weeklypass'); %>
+    </div>
+    
+    <div class="text-center mt-4">
+        <button type="button" id="proceedToCheckoutGameBtn" class="btn btn-primary btn-lg" disabled>
+            <i class="fas fa-shopping-cart me-2"></i> Lanjutkan ke Pembayaran
+        </button>
+    </div>
+    <p id="selectionError" class="text-danger text-center mt-2" style="display:none;">Silakan pilih salah satu produk.</p>
+</div>
+<style>
+    .product-select-card { cursor: pointer; border: 2px solid transparent; transition: border-color 0.2s ease-in-out, transform 0.2s ease-in-out; }
+    .product-select-card:hover { border-color: var(--primary-hover-color); transform: translateY(-3px); }
+    .product-select-card input[type="radio"]:checked + .card-body {
+        background-color: var(--primary-light);
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 0.2rem rgba(109, 91, 208, 0.3);
+    }
+     .product-select-card .card-title { font-size: 0.9rem; margin-bottom: 0.25rem; min-height: 3.5em; display: flex; align-items: center; justify-content: center;}
+    .product-select-card .note-text { font-size: 0.75rem; color: #6c757d !important; }
+    .game-product-card { background-color: #fff; }
+</style>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const productRadios = document.querySelectorAll('input[name="selected_product"]');
+    const proceedBtn = document.getElementById('proceedToCheckoutGameBtn');
+    const selectionError = document.getElementById('selectionError');
+    const gameUserIdInput = document.getElementById('game_user_id');
+
+    productRadios.forEach(radio => {
+        radio.addEventListener('change', function() {
+            if (this.checked) {
+                proceedBtn.disabled = !gameUserIdInput.value.trim();
+                selectionError.style.display = 'none';
+                document.querySelectorAll('.product-select-card').forEach(card => card.style.borderColor = 'transparent');
+                this.closest('.product-select-card').style.borderColor = 'var(--primary-color)';
+            }
+        });
+    });
+
+    gameUserIdInput.addEventListener('input', function() {
+        const selectedProduct = document.querySelector('input[name="selected_product"]:checked');
+        proceedBtn.disabled = !this.value.trim() || !selectedProduct;
+    });
+
+    proceedBtn.addEventListener('click', function() {
+        const selectedProduct = document.querySelector('input[name="selected_product"]:checked');
+        const gameUserId = gameUserIdInput.value.trim();
+        const gameZoneId = document.getElementById('game_zone_id').value.trim();
+
+        if (!gameUserId) {
+            alert("User ID Game tidak boleh kosong!");
+            gameUserIdInput.focus();
+            return;
+        }
+        if (!selectedProduct) {
+            selectionError.textContent = "Silakan pilih salah satu produk terlebih dahulu.";
+            selectionError.style.display = 'block';
+            return;
+        }
+
+        const productCode = selectedProduct.dataset.code;
+        const productName = selectedProduct.dataset.name;
+        const productPrice = selectedProduct.dataset.price;
+
+        const queryString = new URLSearchParams({
+            product_code: productCode,
+            product_name: productName,
+            product_price: productPrice,
+            game_user_id: gameUserId,
+            game_zone_id: gameZoneId
+        }).toString();
+        
+        window.location.href = `/games/checkout?${queryString}`;
+    });
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,73 @@
+<%- include('../partials/header') %>
+<div class="container py-md-5 text-center">
+    <div class="card shadow-lg border-0 mx-auto" style="max-width: 600px;">
+        <div class="card-body p-4 p-md-5">
+            <% 
+            let iconClass = 'fa-hourglass-half text-warning';
+            let titleText = 'Status Pesanan';
+            if (order.status === 'completed') {
+                iconClass = 'fa-check-circle text-success';
+                titleText = 'Pembelian Berhasil!';
+            } else if (order.status === 'processing_game_topup' || order.status === 'paid_with_gateway' || order.status === 'processing_pterodactyl' || order.status === 'processing_vps') {
+                iconClass = 'fa-cogs text-primary';
+                titleText = 'Pesanan Sedang Diproses';
+            } else if (order.status === 'game_topup_failed' || order.status === 'payment_failed' || order.status === 'pterodactyl_setup_failed' || order.status === 'vps_setup_failed') {
+                iconClass = 'fa-times-circle text-danger';
+                titleText = 'Pesanan Gagal';
+            }
+            %>
+            <i class="fas <%= iconClass %> fa-4x mb-4"></i>
+            <h2 class="display-6 fw-bold"><%= titleText %></h2>
+            
+            <p class="lead text-muted">Order ID: #<%= order._id.toString().slice(-8) %></p>
+            <hr class="my-4">
+            <div class="text-start mb-4 bg-light p-3 rounded">
+                <h5 class="mb-3"><i class="fas fa-receipt me-2 text-primary"></i>Detail Pembelian:</h5>
+                <p class="mb-1"><strong>Layanan:</strong> <%= order.productNameSnapshot %></p>
+                <% if (order.gameOrderDetails && order.gameOrderDetails.gameUserId) { %>
+                    <p class="mb-1"><strong>Tujuan/ID:</strong> <%= order.gameOrderDetails.gameUserId %><% if(order.gameOrderDetails.gameZoneId) { %>(<%= order.gameOrderDetails.gameZoneId %>)<% } %></p>
+                <% } else if (order.pterodactylOrderDetails && order.pterodactylOrderDetails.panelUsername) { %>
+                    <p class="mb-1"><strong>Panel Username:</strong> <%= order.pterodactylOrderDetails.panelUsername %></p>
+                <% } else if (order.digitalOceanVpsOrderDetails && order.digitalOceanVpsOrderDetails.hostname) { %>
+                     <p class="mb-1"><strong>Hostname VPS:</strong> <%= order.digitalOceanVpsOrderDetails.hostname %></p>
+                     <p class="mb-1"><strong>IP Address:</strong> <%= order.digitalOceanVpsOrderDetails.ipAddress || 'Dalam Proses' %></p>
+                <% } %>
+                <p class="mb-0"><strong>Total Bayar:</strong> Rp <%= order.totalPrice.toLocaleString('id-ID') %></p>
+            </div>
+
+            <% let statusMessage = ''; %>
+            <% if (order.productType === 'game_topup' && order.gameOrderDetails && order.gameOrderDetails.statusMessage) { statusMessage = order.gameOrderDetails.statusMessage; } %>
+            <% else if (order.productType === 'physical_virtual' && order.pterodactylOrderDetails && order.pterodactylOrderDetails.statusMessage) { statusMessage = order.pterodactylOrderDetails.statusMessage; } %>
+            <% else if (order.productType === 'physical_virtual' && order.digitalOceanVpsOrderDetails && order.digitalOceanVpsOrderDetails.statusMessage) { statusMessage = order.digitalOceanVpsOrderDetails.statusMessage; } %>
+            <% else if (order.paymentGatewayDetails && order.paymentGatewayDetails.statusMessage) { statusMessage = order.paymentGatewayDetails.statusMessage; } %>
+            
+            <% if (statusMessage) { %>
+                <div class="alert alert-<%= order.status === 'completed' ? 'success' : (order.status.includes('failed') ? 'danger' : 'info') %>">
+                    <strong>Info Tambahan:</strong> <%= statusMessage %>
+                     <% if (order.productType === 'game_topup' && order.gameOrderDetails && order.gameOrderDetails.forestApiTrxId) { %>
+                        <br><small class="text-muted">Ref Provider: <%= order.gameOrderDetails.forestApiTrxId %></small>
+                    <% } %>
+                </div>
+            <% } %>
+            
+             <% if (['processing_game_topup', 'paid_with_gateway', 'processing_pterodactyl', 'processing_vps'].includes(order.status)) { %>
+                <p class="text-muted">Mohon tunggu beberapa saat hingga proses selesai. Halaman ini akan mencoba refresh otomatis atau Anda bisa cek kembali nanti.</p>
+                <script>
+                    if (!['completed', 'game_topup_failed', 'payment_failed', 'pterodactyl_setup_failed', 'vps_setup_failed'].includes('<%= order.status %>')) {
+                        setTimeout(() => window.location.reload(), 30000);
+                    }
+                </script>
+            <% } %>
+
+            <div class="mt-4 d-flex flex-column flex-sm-row justify-content-center gap-2">
+                <a href="/user/profile" class="btn btn-outline-primary"><i class="fas fa-user-circle me-1"></i>Profil Saya</a>
+                <% if (service && service.slug) { %>
+                    <a href="/layanan/<%= service.categorySlug %>/<%= service.slug %>" class="btn btn-outline-secondary"><i class="fas fa-redo me-1"></i>Beli Lagi (<%= service.title %>)</a>
+                <% } else { %>
+                    <a href="/layanan" class="btn btn-outline-secondary"><i class="fas fa-store-alt me-1"></i>Layanan Lain</a>
+                <% } %>
+            </div>
+        </div>
+    </div>
+</div>
+<%- include('../partials/footer') %>

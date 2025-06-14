@@ -1,0 +1,112 @@
+<%- include('../partials/header') %>
+<div class="container py-md-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/layanan"><i class="fas fa-store-alt me-1"></i>Layanan</a></li>
+            <% if (service && service.slug && service.categorySlug) { %>
+                <li class="breadcrumb-item"><a href="/layanan/<%= service.categorySlug %>/<%= service.slug %>"><%= service.title %></a></li>
+            <% } %>
+            <li class="breadcrumb-item active" aria-current="page">Pembayaran</li>
+        </ol>
+    </nav>
+    <h2 class="mb-4"><i class="fas fa-qrcode me-2"></i>Selesaikan Pembayaran Pesanan</h2>
+    <hr class="mb-5">
+    <div class="card shadow-lg border-0 mx-auto" style="max-width: 700px;">
+        <div class="card-header bg-primary-light">
+            <h5 class="mb-0 text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Order #<%= order._id.toString().slice(-8) %></h5>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <p class="lead">Layanan: <strong><%= order.productNameSnapshot %></strong></p>
+            <% if (order.gameOrderDetails && order.gameOrderDetails.gameUserId) { %>
+                <p>Untuk Nomor/ID Tujuan: <strong><%= order.gameOrderDetails.gameUserId %><% if(order.gameOrderDetails.gameZoneId) { %>(<%= order.gameOrderDetails.gameZoneId %>)<% } %></strong></p>
+            <% } %>
+            <p>Total yang harus dibayar: <strong class="fs-4 text-success">Rp <%= order.paymentGatewayDetails.amountToPay.toLocaleString('id-ID') %></strong></p>
+            <p class="text-muted small">Metode: <%= order.paymentGatewayDetails.gateway.replace('_', ' ') %></p>
+
+            <% if (order.paymentGatewayDetails.qrImageUrl) { %>
+                <div class="text-center my-4 p-4 border rounded bg-light shadow-sm">
+                    <h4 class="mb-3 text-primary"><i class="fas fa-qrcode me-2"></i>Scan QR Code Berikut</h4>
+                    <div class="qr-code-container mx-auto" style="max-width: 280px;">
+                        <img src="<%= order.paymentGatewayDetails.qrImageUrl %>" alt="QR Code Pembayaran" class="img-fluid border p-1 bg-white">
+                    </div>
+                    <% if (order.paymentGatewayDetails.expiredAt) { %>
+                        <p class="fw-bold text-danger fs-09 mt-3">
+                            Bayar sebelum <%= new Date(order.paymentGatewayDetails.expiredAt).toLocaleString('id-ID', {dateStyle:'medium', timeStyle:'short'}) %>.
+                        </p>
+                    <% } %>
+                </div>
+            <% } else { %>
+                <div class="alert alert-warning">Instruksi Pembayaran Tidak Tersedia atau Tidak Ada QR Code.</div>
+            <% } %>
+            
+            <div id="paymentStatusMessage" class="mt-3"></div>
+
+            <div class="mt-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <a href="/user/profile" class="btn btn-outline-secondary"><i class="fas fa-user-circle me-2"></i>Profil Saya</a>
+                <button class="btn btn-info" id="checkPaymentBtn" data-orderid="<%= order._id %>">
+                    <i class="fas fa-sync-alt me-2"></i>Saya Sudah Bayar, Cek Status
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const checkBtn = document.getElementById('checkPaymentBtn');
+    const statusMsg = document.getElementById('paymentStatusMessage');
+    const orderId = checkBtn ? checkBtn.dataset.orderid : null;
+    let checkInterval;
+
+    async function checkAndProcessPayment() {
+        if (!orderId) return;
+        checkBtn.disabled = true;
+        checkBtn.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Mengecek...';
+        
+        try {
+            const response = await fetch(`/layanan/order/${orderId}/check-payment-and-process`);
+            const result = await response.json();
+
+            if (result.success && (result.status === 'completed' || result.status === 'processing_game_topup' || result.status === 'paid_with_gateway')) {
+                statusMsg.innerHTML = `<div class="alert alert-success">Pembayaran berhasil & sedang diproses! ${result.message}</div>`;
+                clearInterval(checkInterval);
+                setTimeout(() => window.location.href = `/layanan/order/${orderId}/status`, 2500);
+            } else if (result.success && result.status === 'pending_payment') {
+                statusMsg.innerHTML = `<div class="alert alert-info">${result.message || 'Pembayaran masih pending.'}</div>`;
+            } else if (result.success && (result.status === 'game_topup_failed' || result.status === 'payment_failed')) {
+                statusMsg.innerHTML = `<div class="alert alert-danger">Proses Gagal: ${result.message}</div>`;
+                clearInterval(checkInterval);
+            }
+             else {
+                statusMsg.innerHTML = `<div class="alert alert-warning">${result.message || 'Gagal memeriksa atau pembayaran belum dikonfirmasi.'}</div>`;
+            }
+        } catch (error) {
+            statusMsg.innerHTML = '<div class="alert alert-danger">Kesalahan jaringan saat cek status.</div>';
+        } finally {
+            if(checkBtn) {
+                checkBtn.disabled = false;
+                checkBtn.innerHTML = '<i class="fas fa-sync-alt me-2"></i>Saya Sudah Bayar, Cek Status';
+            }
+        }
+    }
+
+    if (checkBtn) {
+        checkBtn.addEventListener('click', checkAndProcessPayment);
+        let pollCount = 0;
+        const maxPolls = 15; 
+        checkInterval = setInterval(async () => {
+            const currentStatusDiv = document.querySelector('#paymentStatusMessage .alert');
+            if (!currentStatusDiv || currentStatusDiv.classList.contains('alert-info') || currentStatusDiv.classList.contains('alert-warning')) {
+                if (pollCount < maxPolls) {
+                    await checkAndProcessPayment();
+                    pollCount++;
+                } else {
+                    clearInterval(checkInterval);
+                }
+            } else {
+                 clearInterval(checkInterval);
+            }
+        }, 20000); // Poll setiap 20 detik
+    }
+});
+</script>
+<%- include('../partials/footer') %>

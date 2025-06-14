@@ -1,0 +1,130 @@
+<%- include('partials/header', { pageTitle: 'Papan Informasi' }) %>
+
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold"><i class="fas fa-bullhorn me-3 text-primary"></i>Papan Informasi</h1>
+        <p class="lead text-muted">Pengumuman dan informasi terbaru dari <%= storeName %>.</p>
+    </div>
+
+    <div id="informationBoardContainer">
+        <% if (typeof informations !== 'undefined' && Array.isArray(informations) && informations.length > 0) { %>
+            <% informations.forEach(info => { %>
+                <div class="card shadow-sm mb-4" data-aos="fade-up" data-item-id="<%= info._id %>">
+                    <div class="card-header bg-primary-light">
+                        <h5 class="mb-0 text-primary"><%= info.title %></h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="text-muted small mb-2">
+                            <i class="fas fa-calendar-alt me-1"></i> Dipublikasikan: <%= new Date(info.createdAt).toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) %>
+                        </div>
+                        <div class="info-content">
+                            <%- info.content %>
+                        </div>
+                    </div>
+                </div>
+            <% }) %>
+        <% } else { %>
+            <div id="noInfoMessageDiv" class="alert alert-info text-center p-5">
+                <i class="fas fa-info-circle fa-3x mb-3"></i>
+                <h4 class="alert-heading">Belum Ada Informasi</h4>
+                <p>Saat ini belum ada pengumuman atau informasi terbaru. Silakan cek kembali nanti.</p>
+            </div>
+        <% } %>
+    </div>
+</div>
+
+<style>
+    .info-content img {
+        max-width: 100%;
+        height: auto;
+        border-radius: var(--border-radius);
+        margin-top: 0.5rem;
+        margin-bottom: 0.5rem;
+    }
+    .info-content p:last-child {
+        margin-bottom: 0;
+    }
+</style>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const socket = io();
+        const informationBoardContainer = document.getElementById('informationBoardContainer');
+
+        function renderNewInfoCard(newItem) {
+            const cardDiv = document.createElement('div');
+            cardDiv.className = 'card shadow-sm mb-4';
+            cardDiv.setAttribute('data-aos', 'fade-up');
+            cardDiv.setAttribute('data-item-id', newItem._id);
+
+            const creationDate = new Date(newItem.createdAt || Date.now());
+            const formattedDate = creationDate.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+            
+            const tempContentDiv = document.createElement('div');
+            tempContentDiv.innerHTML = newItem.content; // Jika Anda mengirim HTML yang sudah disanitasi
+            // Jika tidak, dan ingin escape:
+            // tempContentDiv.textContent = newItem.content;
+            // const safeContent = tempContentDiv.innerHTML;
+
+            cardDiv.innerHTML = `
+                <div class="card-header bg-primary-light">
+                    <h5 class="mb-0 text-primary">${newItem.title}</h5>
+                </div>
+                <div class="card-body">
+                    <div class="text-muted small mb-2">
+                        <i class="fas fa-calendar-alt me-1"></i> Dipublikasikan: ${formattedDate}
+                    </div>
+                    <div class="info-content">
+                        ${tempContentDiv.innerHTML}
+                    </div>
+                </div>
+            `;
+            if (typeof AOS !== 'undefined') { // Re-initialize AOS for new element
+                setTimeout(() => AOS.init({ once: true }), 50); // Slight delay
+            }
+            return cardDiv;
+        }
+
+        socket.on('newInfoBoardUpdate', (newItem) => {
+            const noInfoMessageDiv = document.getElementById('noInfoMessageDiv');
+            if (noInfoMessageDiv && noInfoMessageDiv.parentNode === informationBoardContainer) {
+                informationBoardContainer.removeChild(noInfoMessageDiv);
+            }
+            
+            const existingItemElement = informationBoardContainer.querySelector(`.card[data-item-id="${newItem._id}"]`);
+            if (existingItemElement) {
+                existingItemElement.remove(); 
+            }
+
+            const newCard = renderNewInfoCard(newItem);
+
+            if (informationBoardContainer.firstChild) {
+                informationBoardContainer.insertBefore(newCard, informationBoardContainer.firstChild);
+            } else {
+                informationBoardContainer.appendChild(newCard);
+            }
+        });
+
+        socket.on('infoBoardItemDeleted', (deletedItem) => {
+            if (informationBoardContainer) {
+                const itemElement = informationBoardContainer.querySelector(`.card[data-item-id="${deletedItem._id}"]`);
+                if (itemElement) {
+                    itemElement.remove();
+                }
+            }
+            if (informationBoardContainer && informationBoardContainer.children.length === 0 && !document.getElementById('noInfoMessageDiv')) {
+                const noInfoDiv = document.createElement('div');
+                noInfoDiv.id = 'noInfoMessageDiv';
+                noInfoDiv.className = 'alert alert-info text-center p-5';
+                noInfoDiv.innerHTML = `
+                    <i class="fas fa-info-circle fa-3x mb-3"></i>
+                    <h4 class="alert-heading">Belum Ada Informasi</h4>
+                    <p>Saat ini belum ada pengumuman atau informasi terbaru. Silakan cek kembali nanti.</p>
+                `;
+                informationBoardContainer.appendChild(noInfoDiv);
+            }
+        });
+    });
+</script>
+
+<%- include('partials/footer') %>

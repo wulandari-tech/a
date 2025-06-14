@@ -1,0 +1,67 @@
+<%- include('../partials/header', { pageTitle: 'Admin - Kelola Produk' }) %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2"><i class="fas fa-boxes me-2"></i>Kelola Produk</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <a href="/admin/products/add" class="btn btn-primary">
+            <i class="fas fa-plus-circle me-1"></i> Tambah Produk Baru
+        </a>
+    </div>
+</div>
+
+<div class="card shadow-sm">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th><i class="fas fa-signature me-1"></i>Nama Produk</th>
+                        <th><i class="fas fa-tags me-1"></i>Kategori</th>
+                        <th><i class="fas fa-dollar-sign me-1"></i>Harga</th>
+                        <th><i class="fas fa-cubes me-1"></i>Stok</th>
+                        <th><i class="fas fa-toggle-on me-1"></i>Status</th>
+                        <th><i class="fas fa-calendar-alt me-1"></i>Dibuat</th>
+                        <th class="text-center"><i class="fas fa-cogs me-1"></i>Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <% if(typeof products !== 'undefined' && Array.isArray(products) && products.length > 0) { %>
+                        <% products.forEach(product => { %>
+                            <tr>
+                                <td class="fw-bold"><%= product.name %></td>
+                                <td><%= product.category.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase()) %></td>
+                                <td>Rp <%= product.price.toLocaleString('id-ID') %></td>
+                                <td><%= product.stock === -1 ? 'Tak Terbatas' : product.stock %></td>
+                                <td>
+                                    <span class="badge fs-08 py-2 px-2 text-uppercase bg-<%= product.isActive ? 'success' : 'danger' %>">
+                                        <%= product.isActive ? 'Aktif' : 'Nonaktif' %>
+                                    </span>
+                                </td>
+                                <td><small><%= new Date(product.createdAt).toLocaleDateString('id-ID') %></small></td>
+                                <td class="text-center table-action-buttons">
+                                    <a href="/admin/products/edit/<%= product._id %>" class="btn btn-sm btn-outline-primary" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                    <form action="/admin/products/delete/<%= product._id %>" method="POST" class="d-inline" onsubmit="return confirm('Apakah Anda yakin ingin menghapus produk ini: <%= product.name %>?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Hapus">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                            </tr>
+                        <% }) %>
+                    <% } else { %>
+                        <tr>
+                            <td colspan="7" class="text-center p-4 text-muted">
+                                <i class="fas fa-box-open fa-2x mb-2"></i><br>
+                                Belum ada produk yang ditambahkan.
+                            </td>
+                        </tr>
+                    <% } %>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<%- include('../partials/footer') %>

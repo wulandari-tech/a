@@ -1,0 +1,100 @@
+
+<%- include('../partials/header') %>
+
+<div class="container py-md-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="/products"><i class="fas fa-store me-1"></i>Produk</a></li>
+            <% if (product && product._id && product.name) { %>
+                 <li class="breadcrumb-item"><a href="/product/<%= product._id %>"><%= product.name %></a></li>
+            <% } else { %>
+                 <li class="breadcrumb-item">Detail Produk</li>
+            <% } %>
+            <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+        </ol>
+    </nav>
+
+    <div class="row g-5">
+        <div class="col-lg-7">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary-light">
+                    <h4 class="mb-0 text-primary fw-semibold"><i class="fas fa-shopping-cart me-2"></i>Ringkasan Pesanan</h4>
+                </div>
+                <div class="card-body p-4">
+                    <h5 class="card-title fw-bold mb-3"><%= product.name %></h5>
+                    <p class="text-muted"><%= product.description ? product.description.substring(0,150) : 'Tidak ada deskripsi.' %>...</p>
+                    
+                    <% 
+                        let finalPrice = product.price;
+                        if (currentUser && currentUser.isReseller && product.resellerPrice && product.resellerPrice < product.price) {
+                            finalPrice = product.resellerPrice;
+                        }
+                        const displayQuantity = quantity > 1 ? quantity : 1; 
+                        const totalPrice = finalPrice * displayQuantity;
+                    %>
+
+                    <% if (product.category === 'app_premium' && displayQuantity > 1) { %>
+                        <p class="mb-1"><strong>Harga Satuan:</strong> Rp <%= finalPrice.toLocaleString('id-ID') %></p>
+                        <p class="mb-1"><strong>Jumlah:</strong> <%= displayQuantity %></p>
+                    <% } %>
+                    <hr>
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span class="fs-5">Total Harga:</span>
+                        <span class="fs-4 fw-bold text-success">Rp <%= totalPrice.toLocaleString('id-ID') %></span>
+                    </div>
+                    <% if (currentUser && currentUser.isReseller && product.resellerPrice && product.resellerPrice < product.price) { %>
+                        <div class="mt-1 text-muted small">Harga satuan normal: <span class="text-decoration-line-through">Rp <%= product.price.toLocaleString('id-ID') %></span> (Anda hemat sebagai reseller!)</div>
+                    <% } %>
+                     <div class="mt-2 text-muted small">
+                        Harga yang tertera mungkin sudah termasuk PPN (jika berlaku). 
+                        Biaya transaksi tambahan dari payment gateway mungkin berlaku saat pembayaran.
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="card shadow-sm border-0">
+                <div class="card-header bg-primary-light">
+                     <h4 class="mb-0 text-primary fw-semibold"><i class="fas fa-credit-card me-2"></i>Pilih Metode Pembayaran</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form action="/order/process" method="POST">
+                        <input type="hidden" name="productId" value="<%= product._id %>">
+                        <input type="hidden" name="quantity" value="<%= displayQuantity %>">
+                        
+                        <div class="form-check mb-3 p-3 border rounded hover-bg-light shadow-sm">
+                            <input class="form-check-input" type="radio" name="payment_method" id="payWithBalance" value="balance" <%= user && user.balance >= totalPrice ? 'checked' : 'disabled' %>>
+                            <label class="form-check-label w-100" for="payWithBalance">
+                                <strong class="d-block"><i class="fas fa-wallet me-2 text-success"></i> Bayar dengan Saldo Akun</strong>
+                                <span class="d-block small text-muted">Saldo Anda: Rp <%= user ? user.balance.toLocaleString('id-ID') : '0' %></span>
+                                <% if (!user || user.balance < totalPrice) { %>
+                                    <span class="d-block small text-danger">Saldo tidak mencukupi. <a href="/user/deposit">Deposit dulu</a>.</span>
+                                <% } %>
+                            </label>
+                        </div>
+
+                        <div class="form-check mb-3 p-3 border rounded hover-bg-light shadow-sm">
+                             <input class="form-check-input" type="radio" name="payment_method" id="payWithOrkutQris" value="orkut_qris" <%= (!user || user.balance < totalPrice) ? 'checked' : '' %>>
+                            <label class="form-check-label w-100" for="payWithOrkutQris">
+                                 <strong class="d-block"><img src="/images/qris_logo.png" alt="QRIS" style="height: 20px; margin-right: 8px;"> Bayar dengan QRIS (Orkut)</strong>
+                                <span class="d-block small text-muted">
+                                    Nominal: Rp <%= totalPrice.toLocaleString('id-ID') %>.
+                                    <span class="text-primary">Fee Payment Gateway: <%= process.env.ORKUT_QRIS_FEE_PERCENTAGE || '0.7' %>% (mungkin ditambahkan saat pembayaran).</span>
+                                </span>
+                            </label>
+                        </div>
+                        
+                        <style>.hover-bg-light:hover{background-color: #f0f3f5!important;cursor: pointer;}</style>
+
+                        <div class="d-grid mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg fw-bold" id="proceedToPaymentBtn">
+                                <i class="fas fa-shield-alt me-2"></i> Lanjutkan & Bayar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<%- include('../partials/footer') %>

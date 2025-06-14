@@ -1,0 +1,76 @@
+<%- include('../partials/header', { pageTitle: 'Pembayaran Midtrans - Deposit ' + deposit.reffId }) %>
+
+<div class="container py-md-5">
+    <h2 class="mb-4"><i class="fas fa-credit-card me-2"></i>Selesaikan Pembayaran via Midtrans</h2>
+    <hr class="mb-5">
+    <div class="card shadow-lg border-0 mx-auto" style="max-width: 700px;">
+        <div class="card-header bg-primary-light">
+            <h5 class="mb-0 text-primary"><i class="fas fa-file-invoice-dollar me-2"></i>Deposit ID: <%= deposit.reffId %></h5>
+        </div>
+        <div class="card-body p-4 p-md-5">
+            <p class="lead">Metode: <strong><%= deposit.method %></strong></p>
+            <p>Total yang harus dibayar: <strong class="fs-4 text-success">Rp <%= deposit.totalPaid.toLocaleString('id-ID') %></strong></p>
+            <p class="text-muted small">Anda akan diarahkan ke halaman pembayaran Midtrans.</p>
+
+            <div id="snap-container" class="my-4 text-center">
+                 <button id="pay-button" class="btn btn-lg btn-success fw-bold">
+                    <i class="fas fa-shield-alt"></i> Lanjutkan ke Pembayaran Midtrans
+                </button>
+            </div>
+            
+            <div id="midtransPaymentStatusMessage" class="mt-3"></div>
+
+            <div class="mt-4 d-flex flex-column flex-sm-row justify-content-between align-items-center gap-2">
+                <a href="/user/deposit/status/<%= deposit._id %>" class="btn btn-outline-secondary"><i class="fas fa-arrow-left me-2"></i>Kembali ke Status Deposit</a>
+            </div>
+            <p class="text-center text-muted small mt-4">
+                Setelah pembayaran berhasil di Midtrans, status deposit akan otomatis terupdate.
+            </p>
+        </div>
+    </div>
+</div>
+
+<% if (midtransClientKey) { %>
+    <script src="https://app.midtrans.com/snap/snap.js" data-client-key="<%= midtransClientKey %>"></script>
+    <script type="text/javascript">
+        document.getElementById('pay-button').onclick = function(){
+            fetch('/api/midtrans/create-transaction/deposit/<%= deposit._id %>', { method: 'POST' })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success && data.token) {
+                        snap.pay(data.token, {
+                            onSuccess: function(result){
+                                document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-success">Pembayaran berhasil! Status deposit akan segera diperbarui.</div>';
+                                document.getElementById('pay-button').style.display = 'none';
+                                setTimeout(() => { window.location.href = '/user/deposit/status/<%= deposit._id %>'; }, 3000);
+                            },
+                            onPending: function(result){
+                                document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-warning">Pembayaran Anda tertunda. Silakan selesaikan pembayaran. Status: ' + result.status_message + '</div>';
+                            },
+                            onError: function(result){
+                                document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-danger">Pembayaran gagal. Silakan coba lagi atau pilih metode lain. Pesan: ' + result.status_message + '</div>';
+                            },
+                            onClose: function(){
+                                document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-info">Anda menutup pop-up pembayaran. Jika belum bayar, silakan klik tombol lagi.</div>';
+                            }
+                        });
+                    } else {
+                        document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-danger">Gagal membuat transaksi Midtrans: ' + (data.message || 'Error tidak diketahui') + '</div>';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error fetching midtrans token:', error);
+                    document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-danger">Terjadi kesalahan saat menghubungi server untuk pembayaran.</div>';
+                });
+        };
+    </script>
+<% } else { %>
+    <script type="text/javascript">
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('midtransPaymentStatusMessage').innerHTML = '<div class="alert alert-danger">Konfigurasi Midtrans Client Key tidak ditemukan. Pembayaran tidak dapat dilanjutkan.</div>';
+            document.getElementById('pay-button').disabled = true;
+        });
+    </script>
+<% } %>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,209 @@
+<%- include('../partials/header', { pageTitle: 'Admin - Tambah Produk Baru' }) %>
+
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+    <h1 class="h2 fw-bold"><i class="fas fa-plus-circle me-2"></i>Tambah Produk Baru</h1>
+</div>
+
+<% if (typeof errors !== 'undefined' && errors.length > 0) { %>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <h5 class="alert-heading"><i class="fas fa-exclamation-triangle me-2"></i>Input Tidak Valid:</h5>
+        <ul class="mb-0">
+            <% errors.forEach(function(error) { %>
+                <li><%= error.msg %></li>
+            <% }); %>
+        </ul>
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+<% } %>
+
+<form action="/admin/products/add" method="POST" class="needs-validation" novalidate>
+    <div class="row">
+        <div class="col-md-8">
+            <div class="card shadow-sm border-0 mb-4">
+                <div class="card-header bg-light">
+                    <h5 class="mb-0 text-primary">Informasi Dasar Produk</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="name" class="form-label">Nama Produk</label>
+                        <input type="text" class="form-control form-control-lg <%= (errors.find(e => e.param === 'name' || e.msg.toLowerCase().includes('nama'))) ? 'is-invalid' : (oldInput.name ? 'is-valid' : '') %>" 
+                               id="name" name="name" value="<%= oldInput.name || (typeof product !== 'undefined' && product.name ? product.name : '') %>" required>
+                        <div class="invalid-feedback">Nama produk tidak boleh kosong.</div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="description" class="form-label">Deskripsi</label>
+                        <textarea class="form-control <%= (errors.find(e => e.param === 'description' || e.msg.toLowerCase().includes('deskripsi'))) ? 'is-invalid' : (oldInput.description ? 'is-valid' : '') %>" 
+                                  id="description" name="description" rows="4" required><%= oldInput.description || (typeof product !== 'undefined' && product.description ? product.description : '') %></textarea>
+                        <div class="invalid-feedback">Deskripsi produk tidak boleh kosong.</div>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label for="price" class="form-label">Harga (Rp)</label>
+                            <input type="number" class="form-control <%= (errors.find(e => e.param === 'price' || e.msg.toLowerCase().includes('harga'))) ? 'is-invalid' : (oldInput.price ? 'is-valid' : '') %>" 
+                                   id="price" name="price" step="100" min="0" value="<%= oldInput.price || (typeof product !== 'undefined' && product.price ? product.price : '') %>" required>
+                            <div class="invalid-feedback">Harga harus angka positif.</div>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="resellerPrice" class="form-label">Harga Reseller (Rp) <small>(Opsional)</small></label>
+                            <input type="number" class="form-control <%= (errors.find(e => e.param === 'resellerPrice' || e.msg.toLowerCase().includes('harga reseller'))) ? 'is-invalid' : (oldInput.resellerPrice ? 'is-valid' : '') %>" 
+                                   id="resellerPrice" name="resellerPrice" step="100" min="0" value="<%= oldInput.resellerPrice || (typeof product !== 'undefined' && product.resellerPrice ? product.resellerPrice : '') %>">
+                            <small class="form-text text-muted">Kosongkan jika tidak ada harga reseller.</small>
+                            <div class="invalid-feedback">Harga reseller harus angka positif jika diisi.</div>
+                        </div>
+                    </div>
+                     <div class="mb-3">
+                        <label for="stock" class="form-label">Stok</label>
+                        <input type="number" class="form-control <%= (errors.find(e => e.param === 'stock' || e.msg.toLowerCase().includes('stok'))) ? 'is-invalid' : (oldInput.stock ? 'is-valid' : '') %>" 
+                               id="stock" name="stock" min="-1" value="<%= oldInput.stock !== undefined ? oldInput.stock : (typeof product !== 'undefined' && product.stock !== undefined ? product.stock : '10') %>" required>
+                        <small class="form-text text-muted">Isi -1 untuk stok tidak terbatas. Untuk Aplikasi Premium dengan VCC, stok akan dihitung otomatis dari jumlah baris VCC jika VCC diisi dan stok bukan -1.</small>
+                        <div class="invalid-feedback">Stok harus angka (atau -1 untuk tidak terbatas).</div>
+                    </div>
+                    <div class="form-check form-switch form-switch-lg mb-3">
+                        <input class="form-check-input" type="checkbox" role="switch" id="isActive" name="isActive" 
+                               <%= (oldInput.isActive === 'on' || (typeof product !== 'undefined' && product.isActive)) || (Object.keys(oldInput).length === 0 && typeof product === 'undefined') ? 'checked' : '' %>>
+                        <label class="form-check-label" for="isActive">Produk Aktif (Tampilkan ke Pengguna)</label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card shadow-sm border-0 mb-4">
+                 <div class="card-header bg-light">
+                    <h5 class="mb-0 text-primary">Kategori & Spesifikasi</h5>
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label for="category" class="form-label">Kategori</label>
+                        <select class="form-select form-select-lg <%= (errors.find(e => e.param === 'category' || e.msg.toLowerCase().includes('kategori'))) ? 'is-invalid' : (oldInput.category ? 'is-valid' : '') %>" 
+                                id="category" name="category" required onchange="toggleSpecInputs(this.value)">
+                            <option value="" disabled <%= (!oldInput.category && (typeof product === 'undefined' || !product.category)) ? 'selected' : '' %>>Pilih Kategori</option>
+                            <option value="vps" <%= (oldInput.category === 'vps' || (typeof product !== 'undefined' && product.category === 'vps')) ? 'selected' : '' %>>VPS DigitalOcean</option>
+                            <option value="pterodactyl_panel" <%= (oldInput.category === 'pterodactyl_panel' || (typeof product !== 'undefined' && product.category === 'pterodactyl_panel')) ? 'selected' : '' %>>Pterodactyl Panel</option>
+                            <option value="app_premium" <%= (oldInput.category === 'app_premium' || (typeof product !== 'undefined' && product.category === 'app_premium')) ? 'selected' : '' %>>Aplikasi Premium</option>
+                            <option value="katalog" <%= (oldInput.category === 'katalog' || (typeof product !== 'undefined' && product.category === 'katalog')) ? 'selected' : '' %>>Katalog Lainnya</option>
+                        </select>
+                        <div class="invalid-feedback">Kategori wajib dipilih.</div>
+                    </div>
+                    
+                    <div id="pterodactylSpecsContainer" class="spec-container mt-3 p-3 border rounded bg-light" 
+                         style="display: <%= (oldInput.category === 'pterodactyl_panel' || (typeof product !== 'undefined' && product.category === 'pterodactyl_panel')) ? 'block' : 'none' %>;">
+                        <h6 class="text-secondary fw-semibold mb-2">Spesifikasi Pterodactyl</h6>
+                        <div class="mb-2">
+                            <label for="ptero_ram" class="form-label form-label-sm">RAM (MB)</label>
+                            <input type="number" class="form-control form-control-sm" id="ptero_ram" name="pterodactylSpecs[ram]" min="0" 
+                                   value="<%= oldInput['pterodactylSpecs[ram]'] || (typeof product !== 'undefined' && product.pterodactylSpecs && product.pterodactylSpecs.ram !== undefined ? product.pterodactylSpecs.ram : '1024') %>">
+                        </div>
+                        <div class="mb-2">
+                            <label for="ptero_disk" class="form-label form-label-sm">Disk (MB)</label>
+                            <input type="number" class="form-control form-control-sm" id="ptero_disk" name="pterodactylSpecs[disk]" min="0" 
+                                   value="<%= oldInput['pterodactylSpecs[disk]'] || (typeof product !== 'undefined' && product.pterodactylSpecs && product.pterodactylSpecs.disk !== undefined ? product.pterodactylSpecs.disk : '5120') %>">
+                        </div>
+                        <div class="mb-0">
+                            <label for="ptero_cpu" class="form-label form-label-sm">CPU Limit (%)</label>
+                            <input type="number" class="form-control form-control-sm" id="ptero_cpu" name="pterodactylSpecs[cpu]" min="0" 
+                                   value="<%= oldInput['pterodactylSpecs[cpu]'] || (typeof product !== 'undefined' && product.pterodactylSpecs && product.pterodactylSpecs.cpu !== undefined ? product.pterodactylSpecs.cpu : '100') %>">
+                        </div>
+                    </div>
+
+                    <div id="digitalOceanVpsSpecsContainer" class="spec-container mt-3 p-3 border rounded bg-light" 
+                         style="display: <%= (oldInput.category === 'vps' || (typeof product !== 'undefined' && product.category === 'vps')) ? 'block' : 'none' %>;">
+                        <h6 class="text-secondary fw-semibold mb-2">Spesifikasi VPS DigitalOcean</h6>
+                        <div class="mb-2">
+                            <label for="do_region" class="form-label form-label-sm">Region</label>
+                            <input type="text" class="form-control form-control-sm" id="do_region" name="digitalOceanVpsSpecs[region]" placeholder="e.g., sgp1" 
+                                   value="<%= oldInput['digitalOceanVpsSpecs[region]'] || (typeof product !== 'undefined' && product.digitalOceanVpsSpecs && product.digitalOceanVpsSpecs.region ? product.digitalOceanVpsSpecs.region : 'sgp1') %>">
+                        </div>
+                        <div class="mb-2">
+                            <label for="do_size" class="form-label form-label-sm">Ukuran (Size Slug)</label>
+                            <input type="text" class="form-control form-control-sm" id="do_size" name="digitalOceanVpsSpecs[size]" placeholder="e.g., s-1vcpu-1gb" 
+                                   value="<%= oldInput['digitalOceanVpsSpecs[size]'] || (typeof product !== 'undefined' && product.digitalOceanVpsSpecs && product.digitalOceanVpsSpecs.size ? product.digitalOceanVpsSpecs.size : 's-1vcpu-1gb') %>">
+                        </div>
+                        <div class="mb-0">
+                            <label for="do_osImage" class="form-label form-label-sm">Image OS (Slug)</label>
+                            <input type="text" class="form-control form-control-sm" id="do_osImage" name="digitalOceanVpsSpecs[osImage]" placeholder="e.g., ubuntu-22-04-x64" 
+                                   value="<%= oldInput['digitalOceanVpsSpecs[osImage]'] || (typeof product !== 'undefined' && product.digitalOceanVpsSpecs && product.digitalOceanVpsSpecs.osImage ? product.digitalOceanVpsSpecs.osImage : 'ubuntu-22-04-x64') %>">
+                        </div>
+                    </div>
+
+                    <div id="appPremiumSpecsContainer" class="spec-container mt-3 p-3 border rounded bg-light" 
+                         style="display: <%= (oldInput.category === 'app_premium' || (typeof product !== 'undefined' && product.category === 'app_premium')) ? 'block' : 'none' %>;">
+                        <h6 class="text-secondary fw-semibold mb-2">Detail Aplikasi Premium</h6>
+                        <div class="mb-2">
+                            <label for="app_vccInfo" class="form-label form-label-sm">Informasi VCC / Akun <small>(Opsional, 1 per baris)</small></label>
+                            <textarea class="form-control form-control-sm" id="app_vccInfo" name="appPremiumDetails[vccInfo]" rows="5" placeholder="Detail VCC, username, password, email, dll. Satu akun per baris."><%= oldInput['appPremiumDetails[vccInfo]'] || (typeof product !== 'undefined' && product.appPremiumDetails && product.appPremiumDetails.vccInfo ? product.appPremiumDetails.vccInfo : '') %></textarea>
+                        </div>
+                        <div class="mb-2">
+                            <label for="app_fileUrl" class="form-label form-label-sm">URL Download File Aplikasi <small>(Opsional)</small></label>
+                            <input type="url" class="form-control form-control-sm" id="app_fileUrl" name="appPremiumDetails[fileUrl]" placeholder="https://linkdownload.com/file.apk" 
+                                   value="<%= oldInput['appPremiumDetails[fileUrl]'] || (typeof product !== 'undefined' && product.appPremiumDetails && product.appPremiumDetails.fileUrl ? product.appPremiumDetails.fileUrl : '') %>">
+                        </div>
+                        <div class="mb-0">
+                            <label for="app_deliveryInstructions" class="form-label form-label-sm">Instruksi Pengiriman / Aktivasi</label>
+                            <textarea class="form-control form-control-sm <%= (errors.find(e => e.param === 'appDeliveryInstructions' || e.msg.toLowerCase().includes('instruksi pengiriman'))) ? 'is-invalid' : (oldInput['appPremiumDetails[deliveryInstructions]'] ? 'is-valid' : '') %>" 
+                                      id="app_deliveryInstructions" name="appPremiumDetails[deliveryInstructions]" rows="3" placeholder="Jelaskan bagaimana produk akan dikirim/diaktifkan."><%= oldInput['appPremiumDetails[deliveryInstructions]'] || (typeof product !== 'undefined' && product.appPremiumDetails && product.appPremiumDetails.deliveryInstructions ? product.appPremiumDetails.deliveryInstructions : '') %></textarea>
+                            <div class="invalid-feedback">Instruksi pengiriman wajib diisi untuk Aplikasi Premium.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <hr>
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary btn-lg fw-bold"><i class="fas fa-save"></i> Simpan Produk</button>
+        <a href="/admin/products" class="btn btn-secondary btn-lg fw-bold"><i class="fas fa-times"></i> Batal</a>
+    </div>
+</form>
+
+<script>
+    (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+
+    function toggleSpecInputs(category) {
+        document.querySelectorAll('.spec-container').forEach(container => container.style.display = 'none');
+        document.querySelectorAll('.spec-container input, .spec-container select, .spec-container textarea').forEach(input => input.required = false);
+
+        if (category === 'pterodactyl_panel') {
+            const container = document.getElementById('pterodactylSpecsContainer');
+            if(container) {
+                container.style.display = 'block';
+                container.querySelectorAll('input').forEach(input => input.required = true);
+            }
+        } else if (category === 'vps') {
+            const container = document.getElementById('digitalOceanVpsSpecsContainer');
+            if(container) {
+                container.style.display = 'block';
+                container.querySelectorAll('input').forEach(input => input.required = true);
+            }
+        } else if (category === 'app_premium') {
+            const container = document.getElementById('appPremiumSpecsContainer');
+            if(container) {
+                container.style.display = 'block';
+                const deliveryInstructionsTextarea = container.querySelector('#app_deliveryInstructions');
+                if (deliveryInstructionsTextarea) {
+                    deliveryInstructionsTextarea.required = true;
+                }
+            }
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function() {
+        const categorySelect = document.getElementById('category');
+        if (categorySelect && categorySelect.value) {
+            toggleSpecInputs(categorySelect.value);
+        }
+    });
+</script>
+
+<%- include('../partials/footer') %>

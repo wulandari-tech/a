@@ -1,0 +1,224 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+<div class="container py-md-5">
+    <div class="text-center mb-5">
+        <h1 class="display-5 fw-bold">Layanan Pascabayar</h1>
+        <p class="lead text-muted">Bayar berbagai tagihan bulanan Anda dengan mudah.</p>
+    </div>
+
+    <% if(typeof services !== 'undefined' && services && services.length > 0) { %>
+        <div class="row">
+            <div class="col-lg-8 mx-auto">
+                <form id="pascabayarForm" class="needs-validation" novalidate>
+                    <div class="card shadow-sm mb-4">
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label for="pascabayarService" class="form-label fs-5">Pilih Jenis Tagihan:</label>
+                                <select class="form-select form-select-lg" id="pascabayarService" name="pascabayarService" required>
+                                    <option value="" disabled selected>-- Pilih Layanan --</option>
+                                    <% services.forEach(service => { %>
+                                        <option value="<%= service.sid %>" 
+                                                data-name="<%= service.layanan %>" 
+                                                data-operator="<%= service.operator %>"
+                                                data-admin="<%= service.admin || 0 %>">
+                                            <%= service.layanan %> (<%= service.operator %>)
+                                        </option>
+                                    <% }); %>
+                                </select>
+                                <div class="invalid-feedback">Silakan pilih jenis tagihan.</div>
+                            </div>
+
+                            <div class="form-floating mb-3">
+                                <input type="text" class="form-control form-control-lg" id="pascabayarTarget" name="pascabayarTarget" placeholder="Nomor Pelanggan / ID Meter" required pattern="\d*">
+                                <label for="pascabayarTarget">Nomor Pelanggan / ID Meter</label>
+                                <div class="invalid-feedback">Nomor Pelanggan/ID Meter wajib diisi.</div>
+                            </div>
+                            
+                            <div class="d-grid">
+                                <button type="button" id="checkBillButton" class="btn btn-info btn-lg">
+                                    <i class="fas fa-search-dollar me-2"></i>Cek Tagihan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+
+                <div id="billDetailsCard" class="card shadow-sm mb-4" style="display: none;">
+                    <div class="card-header bg-light">
+                        <h5 class="mb-0 text-primary"><i class="fas fa-file-invoice me-2"></i>Detail Tagihan</h5>
+                    </div>
+                    <div class="card-body">
+                        <p><strong>Nama Pelanggan:</strong> <span id="billCustomerName">-</span></p>
+                        <p><strong>Periode:</strong> <span id="billPeriod">-</span></p>
+                        <p><strong>Jumlah Tagihan:</strong> <span id="billAmount" class="fw-bold text-danger fs-5">-</span></p>
+                        <p><strong>Biaya Admin:</strong> <span id="billAdminFee" class="fw-bold">-</span></p>
+                        <hr>
+                        <p><strong>Total Bayar:</strong> <span id="billTotalPay" class="fw-bolder text-success fs-4">-</span></p>
+                        
+                        <form id="pascabayarPayForm" action="/layanan/order/process" method="POST" class="mt-3">
+                            <input type="hidden" name="product_code" id="payFormServiceId">
+                            <input type="hidden" name="product_name" id="payFormServiceName">
+                            <input type="hidden" name="product_price" id="payFormProductPrice"> 
+                            <input type="hidden" name="target_id" id="payFormTargetId">
+                            <input type="hidden" name="service_type" value="pascabayar">
+
+                            <div class="form-floating mb-3">
+                                <select class="form-select form-select-lg" id="payment_method_pascabayar" name="payment_method" required>
+                                    <option value="balance" <%= currentUser && currentUser.balance > 0 ? '' : 'disabled' %>>
+                                        Saldo Akun (Tersedia: Rp <%= currentUser ? currentUser.balance.toLocaleString('id-ID') : '0' %>)
+                                    </option>
+                                    <option value="orkut_qris" <%= !(currentUser && currentUser.balance > 0) ? 'selected' : '' %>>QRIS (Orkut)</option>
+                                    <option value="midtrans_gateway">Midtrans (VA, E-Wallet, dll)</option>
+                                </select>
+                                <label for="payment_method_pascabayar">Metode Pembayaran</label>
+                            </div>
+                            <% if (currentUser && currentUser.balance <= 0) { %>
+                                <div class="small text-danger mt-1 mb-2">Saldo akun tidak cukup. Silakan pilih metode lain atau <a href="/user/deposit">deposit</a>.</div>
+                            <% } %>
+
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-success btn-lg fw-bold" id="proceedToPayPascabayarBtn">
+                                    <i class="fas fa-shield-alt me-2"></i>Bayar Tagihan Sekarang
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                <div id="billErrorAlert" class="alert alert-danger" style="display: none;"></div>
+            </div>
+        </div>
+    <% } else { %>
+        <div class="col-12">
+            <p class="alert alert-warning text-center"><i class="fas fa-exclamation-circle me-2"></i>Layanan pascabayar tidak tersedia saat ini atau gagal dimuat.</p>
+        </div>
+    <% } %>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const pascabayarForm = document.getElementById('pascabayarForm');
+    const serviceSelect = document.getElementById('pascabayarService');
+    const targetInput = document.getElementById('pascabayarTarget');
+    const checkBillButton = document.getElementById('checkBillButton');
+    const billDetailsCard = document.getElementById('billDetailsCard');
+    const billErrorAlert = document.getElementById('billErrorAlert');
+    
+    const billCustomerName = document.getElementById('billCustomerName');
+    const billPeriod = document.getElementById('billPeriod');
+    const billAmount = document.getElementById('billAmount');
+    const billAdminFee = document.getElementById('billAdminFee');
+    const billTotalPay = document.getElementById('billTotalPay');
+
+    const payFormServiceId = document.getElementById('payFormServiceId');
+    const payFormServiceName = document.getElementById('payFormServiceName');
+    const payFormProductPrice = document.getElementById('payFormProductPrice');
+    const payFormTargetId = document.getElementById('payFormTargetId');
+    const paymentMethodSelect = document.getElementById('payment_method_pascabayar');
+    const proceedToPayPascabayarBtn = document.getElementById('proceedToPayPascabayarBtn');
+
+
+    if (checkBillButton) {
+        checkBillButton.addEventListener('click', async function() {
+            pascabayarForm.classList.add('was-validated');
+            if (!pascabayarForm.checkValidity()) {
+                return;
+            }
+
+            const serviceId = serviceSelect.value;
+            const targetNo = targetInput.value;
+            const selectedOption = serviceSelect.options[serviceSelect.selectedIndex];
+            const serviceName = selectedOption.dataset.name;
+            const adminFeeFromSelect = parseInt(selectedOption.dataset.admin) || 0;
+
+            checkBillButton.disabled = true;
+            checkBillButton.innerHTML = '<span class="spinner-border spinner-border-sm" role="status"></span> Mengecek...';
+            billDetailsCard.style.display = 'none';
+            billErrorAlert.style.display = 'none';
+            billErrorAlert.textContent = '';
+
+            try {
+                const response = await fetch('/api/layanan/pascabayar/cek-tagihan', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ service_id: serviceId, target_no: targetNo })
+                });
+                const result = await response.json();
+
+                if (result.success && result.data) {
+                    const bill = result.data;
+                    billCustomerName.textContent = bill.nama_pelanggan || bill.customer_name || 'N/A';
+                    billPeriod.textContent = bill.periode || bill.month || 'N/A';
+                    
+                    const tagihan = parseInt(bill.tagihan) || parseInt(bill.nominal) || 0;
+                    const admin = parseInt(bill.admin) || adminFeeFromSelect;
+                    const total = tagihan + admin;
+
+                    billAmount.textContent = 'Rp ' + tagihan.toLocaleString('id-ID');
+                    billAdminFee.textContent = 'Rp ' + admin.toLocaleString('id-ID');
+                    billTotalPay.textContent = 'Rp ' + total.toLocaleString('id-ID');
+
+                    payFormServiceId.value = serviceId;
+                    payFormServiceName.value = serviceName;
+                    payFormProductPrice.value = total; 
+                    payFormTargetId.value = targetNo;
+                    
+                    const currentUserBalance = parseFloat('<%= currentUser ? currentUser.balance : 0 %>');
+                    if(paymentMethodSelect.value === 'balance' && currentUserBalance < total){
+                        proceedToPayPascabayarBtn.disabled = true;
+                         const saldoWarning = document.createElement('div');
+                         saldoWarning.className = 'small text-danger mt-1 mb-2';
+                         saldoWarning.textContent = 'Saldo akun tidak cukup untuk membayar tagihan ini.';
+                         paymentMethodSelect.parentNode.insertBefore(saldoWarning, paymentMethodSelect.nextSibling);
+                    } else {
+                        proceedToPayPascabayarBtn.disabled = false;
+                        const existingWarning = paymentMethodSelect.parentNode.querySelector('.small.text-danger');
+                        if(existingWarning) existingWarning.remove();
+                    }
+
+
+                    billDetailsCard.style.display = 'block';
+                } else {
+                    billErrorAlert.textContent = result.message || 'Gagal mengecek tagihan.';
+                    billErrorAlert.style.display = 'block';
+                }
+            } catch (error) {
+                billErrorAlert.textContent = 'Terjadi kesalahan saat menghubungi server.';
+                billErrorAlert.style.display = 'block';
+            } finally {
+                checkBillButton.disabled = false;
+                checkBillButton.innerHTML = '<i class="fas fa-search-dollar me-2"></i>Cek Tagihan';
+            }
+        });
+    }
+    
+    const pascabayarPayForm = document.getElementById('pascabayarPayForm');
+    if(pascabayarPayForm){
+        pascabayarPayForm.addEventListener('submit', function(event) {
+            const totalPayment = parseFloat(payFormProductPrice.value);
+            const currentUserBalance = parseFloat('<%= currentUser ? currentUser.balance : 0 %>');
+            if(paymentMethodSelect.value === 'balance' && currentUserBalance < totalPayment){
+                alert('Saldo Anda tidak mencukupi untuk pembayaran ini.');
+                event.preventDefault();
+                event.stopPropagation();
+                return false;
+            }
+        });
+    }
+
+     (function () {
+      'use strict'
+      var forms = document.querySelectorAll('.needs-validation')
+      Array.prototype.slice.call(forms)
+        .forEach(function (form) {
+          form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+              event.preventDefault()
+              event.stopPropagation()
+            }
+            form.classList.add('was-validated')
+          }, false)
+        })
+    })()
+
+});
+</script>
+<%- include('../partials/footer') %>

@@ -1,0 +1,391 @@
+<%- include('../partials/header', { pageTitle: pageTitle }) %>
+
+<style>
+    body { font-family: var(--font-secondary); line-height: 1.6; }
+    .docs-container { max-width: 960px; margin: auto; }
+    .docs-section { margin-bottom: 3rem; padding-bottom: 1.5rem; border-bottom: 1px solid #e0e0e0; }
+    .docs-section:last-child { border-bottom: none; margin-bottom: 1rem; }
+    .docs-main-title { font-size: 2.8rem; font-weight: 700; color: var(--primary-color); }
+    .docs-section-title { font-size: 1.75rem; font-weight: 600; color: var(--primary-color); margin-bottom: 1.25rem; padding-bottom: 0.5rem; border-bottom: 2px solid var(--primary-light); }
+    .docs-subsection-title { font-size: 1.3rem; font-weight: 600; color: var(--medium-dark-color); margin-top: 2rem; margin-bottom: 0.8rem; }
+    .endpoint-summary { background-color: #f8f9fa; border: 1px solid #eee; border-left: 5px solid var(--primary-color); padding: 1rem; border-radius: var(--border-radius); margin-bottom: 1.5rem; }
+    .endpoint-summary .method { font-weight: 700; padding: 0.25em 0.6em; border-radius: 0.25rem; color: white; display: inline-block; margin-right: 0.75rem; text-transform: uppercase; font-size: 0.85em;}
+    .method.badge-method-post { background-color: #49cc90; }
+    .method.badge-method-get { background-color: #61affe; }
+    .method.badge-method-put { background-color: #fca130; }
+    .method.badge-method-delete { background-color: #f93e3e; }
+    .endpoint-summary .path { font-family: 'courier new', courier, monospace; font-weight: 600; color: var(--dark-color); font-size: 1.05em;}
+    .endpoint-summary p { margin-bottom: 0.5rem; font-size: 0.95em; color: var(--text-light); }
+    pre[class*="language-"] {
+        background: #272822; 
+        border-radius: var(--border-radius);
+        padding: 1em;
+        font-size: 0.9em;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        border: none;
+        overflow-x: auto;
+    }
+    code[class*="language-"], pre[class*="language-"] { text-shadow: none; }
+    .parameter-table th { background-color: #e9ecef; font-weight: 600;}
+    .parameter-table td, .parameter-table th { font-size: 0.9em; }
+    #docs-nav { transition: top 0.3s ease-in-out; }
+    .nav-pills .nav-link { color: var(--primary-color); margin: 0 0.3rem; font-weight: 500; padding: 0.5rem 1rem; transition: all 0.2s ease;}
+    .nav-pills .nav-link:hover { background-color: var(--primary-light); }
+    .nav-pills .nav-link.active { background-color: var(--primary-color); color: white; box-shadow: 0 2px 4px rgba(122, 47, 219, 0.4);}
+    .page-content-container { padding-top: 0 !important; } 
+</style>
+
+<div class="container docs-container py-5">
+    <div class="text-center mb-5" data-aos="fade-up">
+        <h1 class="docs-main-title">dokumentasi <%= storeName.toLowerCase() %></h1>
+        <p class="lead text-muted">panduan penggunaan endpoint dan alur aplikasi.</p>
+        <p class="text-muted small">base url: <code class="language-http"><%= baseUrl %></code></p>
+    </div>
+
+    <nav id="docs-nav" class="mb-5 sticky-top bg-white py-2 shadow-sm" style="top: 80px; z-index: 1000;" data-aos="fade-in" data-aos-delay="200">
+        <ul class="nav nav-pills justify-content-center flex-wrap">
+            <li class="nav-item"><a class="nav-link" href="#pengantar">pengantar</a></li>
+            <li class="nav-item"><a class="nav-link" href="#autentikasi">autentikasi</a></li>
+            <li class="nav-item"><a class="nav-link" href="#produk-layanan">produk & layanan</a></li>
+            <li class="nav-item"><a class="nav-link" href="#order-pembayaran">order & pembayaran</a></li>
+            <li class="nav-item"><a class="nav-link" href="#pengguna">pengguna</a></li>
+            <li class="nav-item"><a class="nav-link" href="#setup-otomatis">setup otomatis</a></li>
+            <li class="nav-item"><a class="nav-link" href="#admin">admin</a></li>
+            <li class="nav-item"><a class="nav-link" href="#penarikan-dana">penarikan dana</a></li>
+        </ul>
+    </nav>
+
+    <section class="docs-section" id="pengantar" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-info-circle me-2"></i>pengantar</h2>
+        <p>selamat datang di dokumentasi <%= storeName.toLowerCase() %>. dokumentasi ini menyediakan informasi detail mengenai endpoint yang tersedia dan alur kerja utama dalam platform kami.</p>
+        <p>sebagian besar interaksi dengan fungsionalitas inti (seperti pembelian, deposit) dilakukan melalui antarmuka web dan dilindungi oleh sesi login pengguna. Untuk integrasi pihak ketiga, beberapa endpoint API mungkin memerlukan API Key yang bisa didapatkan oleh pengguna terverifikasi (misalnya Seller) melalui dashboard mereka.</p>
+    </section>
+
+    <section class="docs-section" id="autentikasi" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-key me-2"></i>autentikasi pengguna</h2>
+        <p>sistem kami menggunakan autentikasi berbasis sesi (cookie) yang di-set setelah pengguna berhasil login melalui antarmuka web.</p>
+        
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-post">post</span>
+            <span class="path">/register</span>
+            <p>mendaftarkan pengguna baru.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "username": "userbaru",
+    "email": "userbaru@example.com",
+    "password": "password123",
+    "confirmPassword": "password123"
+}</code></pre>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Response Sukses (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "success": true,
+    "message": "Registrasi berhasil. Silakan cek email untuk verifikasi."
+}</code></pre>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Contoh cURL:</h5>
+        <pre data-aos="fade-up"><code class="language-bash">
+curl -X POST <%= baseUrl %>/register \
+     -H "Content-Type: application/json" \
+     -d '{
+           "username": "userbaru",
+           "email": "userbaru@example.com",
+           "password": "password123",
+           "confirmPassword": "password123"
+         }'
+</code></pre>
+
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span>
+            <span class="path">/login</span>
+            <p>memproses login pengguna.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "email": "userbaru@example.com",
+    "password": "password123"
+}</code></pre>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Response Sukses (JSON - set cookie):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "success": true,
+    "message": "Login berhasil!"
+}</code></pre>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Contoh cURL:</h5>
+        <pre data-aos="fade-up"><code class="language-bash">
+curl -X POST <%= baseUrl %>/login \
+     -H "Content-Type: application/json" \
+     -c cookies.txt \ 
+     -d '{
+           "email": "userbaru@example.com",
+           "password": "password123"
+         }'
+</code></pre>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/logout</span>
+            <p>menghapus sesi pengguna dan melakukan logout.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Contoh cURL (dengan cookie sesi):</h5>
+        <pre data-aos="fade-up"><code class="language-bash">
+curl -X GET <%= baseUrl %>/logout -b cookies.txt
+</code></pre>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span>
+            <span class="path">/forgot-password</span>
+            <p>mengirim email reset password jika email terdaftar.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "email": "lupa@example.com"
+}</code></pre>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span>
+            <span class="path">/reset/:token</span>
+            <p>mereset password pengguna dengan token yang valid.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "password": "passwordBaruSuperAman",
+    "confirmPassword": "passwordBaruSuperAman"
+}</code></pre>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/verify-email/:token</span>
+            <p>memverifikasi alamat email pengguna.</p>
+        </div>
+    </section>
+
+    <section class="docs-section" id="produk-layanan" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-cubes me-2"></i>produk toko & layanan ppob</h2>
+        
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/products</span>
+            <p>menampilkan semua produk toko (non-ppob) yang aktif. mendukung query <code>?search=nama&category=kategori</code>.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">Contoh cURL:</h5>
+        <pre data-aos="fade-up"><code class="language-bash">
+curl -X GET "<%= baseUrl %>/products?category=app_premium&search=video"
+</code></pre>
+        
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/product/:id</span>
+            <p>menampilkan detail satu produk toko berdasarkan id produk.</p>
+        </div>
+        
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/layanan</span>
+            <p>menampilkan halaman indeks untuk memilih kategori layanan ppob (game, data, listrik).</p>
+        </div>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/layanan/:categoryforurl/:slugforurl</span>
+            <p>menampilkan daftar produk untuk layanan ppob spesifik.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">contoh request:</h5>
+        <pre data-aos="fade-up"><code class="language-http">get <%= baseUrl %>/layanan/games/mobile-legends
+get <%= baseUrl %>/layanan/data-internet/telkomsel</code></pre>
+    </section>
+
+    <section class="docs-section" id="order-pembayaran" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-shopping-cart me-2"></i>order & pembayaran</h2>
+        
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/checkout/:productid</span> atau <span class="path">/layanan/checkout/item?product_code=...</span>
+            <p>halaman pemilihan metode pembayaran.</p>
+        </div>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span>
+            <span class="path">/order/process</span> atau <span class="path">/layanan/order/item/process</span>
+            <p>memproses pesanan setelah metode pembayaran dipilih.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">request body (contoh layanan ppob):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "product_code": "ml100",
+    "product_name": "mobile legends 100 diamonds",
+    "product_price": 26000,
+    "target_id": "12345678",
+    "zone_id": "1234", 
+    "service_slug": "mobile-legends",
+    "service_category_slug": "games",
+    "payment_method": "balance" 
+}</code></pre>
+
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/order/:orderid/payment</span> atau <span class="path">/layanan/order/:orderid/payment</span>
+            <p>menampilkan halaman pembayaran (misal, qris) untuk order yang pending.</p>
+        </div>
+        
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span>
+            <span class="path">/order/:orderid/check-status</span> atau <span class="path">/layanan/order/:orderid/check-payment-and-process</span>
+            <p>api untuk frontend mengecek status pembayaran order dan memprosesnya jika lunas.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">response sukses (json):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "success": true,
+    "status": "completed",
+    "message": "pembayaran berhasil dikonfirmasi!"
+}</code></pre>
+    </section>
+    
+    <section class="docs-section" id="pengguna" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-user me-2"></i>pengguna</h2>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-get">get</span> <span class="path">/user/profile</span>
+            <p>menampilkan halaman profil pengguna.</p>
+        </div>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/user/profile/edit</span>
+            <p>memproses pembaruan profil.</p>
+        </div>
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/user/deposit</span>
+            <p>membuat permintaan deposit.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">request body (deposit):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "amount": 50000,
+    "method_code": "orkut_qris_dynamic" 
+}</code></pre>
+    </section>
+
+    <section class="docs-section" id="setup-otomatis" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-robot me-2"></i>setup otomatis (setelah bayar)</h2>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-get">get</span> <span class="path">/order/:orderid/setup-ptero</span>
+            <p>halaman input detail akun pterodactyl.</p>
+        </div>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/pterodactyl/setup-account</span>
+            <p>api memproses pembuatan akun & server pterodactyl.</p>
+        </div>
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span> <span class="path">/order/:orderid/setup-vps</span>
+            <p>halaman input password root vps digitalocean.</p>
+        </div>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/digitalocean/setup-vps</span>
+            <p>api memproses pembuatan vps digitalocean.</p>
+        </div>
+    </section>
+
+    <section class="docs-section" id="admin" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-user-shield me-2"></i>admin</h2>
+        <p class="text-muted">semua endpoint di bawah <code>/admin</code> memerlukan login sebagai admin.</p>
+        <p>endpoint admin meliputi dashboard, manajemen produk (crud), manajemen pengguna (list, edit), manajemen order (list, cek status orkut), manajemen deposit (list, approve), manajemen penarikan dana, dan papan informasi.</p>
+    </section>
+
+    <section class="docs-section" id="penarikan-dana" data-aos="fade-up">
+        <h2 class="docs-section-title"><i class="fas fa-hand-holding-usd me-2"></i>Penarikan Dana (Withdrawal)</h2>
+        <div class="endpoint-summary" data-aos="fade-left">
+            <span class="method badge-method-get">get</span> <span class="path">/user/withdraw</span>
+            <p>Menampilkan halaman form permintaan penarikan dana.</p>
+        </div>
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/user/withdraw/request</span>
+            <p>Mengirimkan permintaan penarikan dana.</p>
+        </div>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "amount": 50000, 
+    "bankName": "BCA",
+    "accountNumber": "1234567890",
+    "accountHolderName": "Nama Pemilik Rekening"
+}</code></pre>
+        <h5 class="docs-subsection-title" data-aos="fade-right">Response Sukses (JSON):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "success": true,
+    "message": "Permintaan penarikan berhasil dikirim dan akan diproses."
+}</code></pre>
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-get">get</span> <span class="path">/admin/withdrawals</span>
+            <p>Halaman admin untuk melihat dan mengelola permintaan penarikan dana.</p>
+        </div>
+        <div class="endpoint-summary mt-4" data-aos="fade-left">
+            <span class="method badge-method-post">post</span> <span class="path">/admin/withdrawals/:withdrawalId/(approve|reject|complete)</span>
+            <p>Endpoint admin untuk mengubah status penarikan dana.</p>
+        </div>
+         <h5 class="docs-subsection-title" data-aos="fade-right">Request Body (JSON - opsional untuk approve/reject):</h5>
+        <pre data-aos="fade-up"><code class="language-json">{
+    "adminNotes": "Catatan admin terkait penarikan.",
+    "transactionId": "ID_TRANSAKSI_BANK_JIKA_COMPLETE" 
+}</code></pre>
+    </section>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const navLinks = document.querySelectorAll('#docs-nav .nav-link');
+        const sections = document.querySelectorAll('.docs-section');
+        let navbarEl = document.querySelector('.navbar.fixed-top');
+        let navHeight = navbarEl ? navbarEl.offsetHeight : 70; 
+        let docsNavEl = document.querySelector('#docs-nav');
+        let docsNavOffsetTop = docsNavEl ? docsNavEl.offsetTop - navHeight - 10 : 0;
+
+        function setActiveLink() {
+            let current = '';
+            sections.forEach(section => {
+                const sectionTop = section.offsetTop - navHeight - (docsNavEl ? docsNavEl.offsetHeight : 0) - 40; 
+                if (pageYOffset >= sectionTop) {
+                    current = section.getAttribute('id');
+                }
+            });
+
+            navLinks.forEach(link => {
+                link.classList.remove('active');
+                if (link.getAttribute('href').substring(1) === current) {
+                    link.classList.add('active');
+                }
+            });
+        }
+        
+        if(sections.length > 0 && navLinks.length > 0) {
+            setActiveLink();
+            window.addEventListener('scroll', setActiveLink);
+        }
+
+        navLinks.forEach(link => {
+            link.addEventListener('click', function(e) {
+                e.preventDefault();
+                const targetId = this.getAttribute('href');
+                const targetElement = document.querySelector(targetId);
+                if (targetElement) {
+                    const offsetTop = targetElement.offsetTop - navHeight - (docsNavEl ? docsNavEl.offsetHeight : 0) - 20; 
+                    window.scrollTo({
+                        top: offsetTop,
+                        behavior: 'smooth'
+                    });
+                }
+            });
+        });
+        
+        let lastScrollTop = 0;
+        window.addEventListener("scroll", function(){
+           let currentScroll = window.pageYOffset || document.documentElement.scrollTop;
+           if (docsNavEl) {
+               if (currentScroll > lastScrollTop && currentScroll > docsNavOffsetTop) {
+                   if (navbarEl) { 
+                       docsNavEl.style.top = (navbarEl.offsetHeight - docsNavEl.offsetHeight + 2) + "px"; 
+                   }
+               } else {
+                   if (navbarEl) { 
+                        docsNavEl.style.top = navbarEl.offsetHeight + "px"; 
+                   }
+               }
+           }
+           lastScrollTop = currentScroll <= 0 ? 0 : currentScroll;
+        }, false);
+    });
+</script>
+<%- include('../partials/footer') %>

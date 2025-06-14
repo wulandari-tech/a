@@ -1,0 +1,225 @@
+<%- include('../partials/header') %>
+
+<div class="container py-4">
+    <h2 class="mb-4"><i class="fas fa-gamepad me-2"></i>Top Up Mobile Legends</h2>
+
+    <% if (locals.error && error.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i><%= error %>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    <% } %>
+
+    <form action="/games/mobile-legends/order" method="POST" id="mlOrderForm" class="needs-validation" novalidate>
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary-light">
+                <h5 class="mb-0 text-primary"><i class="fas fa-user-tag me-2"></i>Data Akun Mobile Legends</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-5">
+                        <label for="userIdMl" class="form-label">User ID</label>
+                        <input type="text" class="form-control" id="userIdMl" name="userIdMl" placeholder="Masukkan User ID" required pattern="[0-9]+">
+                        <div class="invalid-feedback">User ID hanya boleh angka.</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label for="zoneIdMl" class="form-label">Zone ID <small>(Contoh: 1234)</small></label>
+                        <input type="text" class="form-control" id="zoneIdMl" name="zoneIdMl" placeholder="Zone ID (tanpa kurung)" pattern="[0-9]*">
+                        <div class="invalid-feedback">Zone ID hanya boleh angka.</div>
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="button" class="btn btn-sm btn-outline-secondary w-100" data-bs-toggle="modal" data-bs-target="#howToFindIdModal">
+                            <i class="fas fa-question-circle"></i> Cara Cari ID?
+                        </button>
+                    </div>
+                </div>
+                 <div class="form-text small mt-2">Pastikan User ID dan Zone ID sudah benar. Kesalahan input menjadi tanggung jawab pembeli.</div>
+            </div>
+        </div>
+        
+        <div class="card shadow-sm mb-4">
+            <div class="card-header bg-primary-light">
+                 <h5 class="mb-0 text-primary"><i class="fas fa-money-check-alt me-2"></i>Metode Pembayaran</h5>
+            </div>
+            <div class="card-body">
+                 <select class="form-select" id="payment_method_ml" name="payment_method_ml" required>
+                    <option value="balance" <%= currentUser && currentUser.balance > 0 ? '' : 'disabled' %>>
+                        Saldo Akun (Tersedia: Rp <%= currentUser ? currentUser.balance.toLocaleString('id-ID') : '0' %>)
+                    </option>
+                    <option value="orkut_qris" <%= !(currentUser && currentUser.balance > 0) ? 'selected' : '' %>>QRIS (Orkut)</option>
+                </select>
+                 <% if (currentUser && currentUser.balance <= 0) { %>
+                    <div class="small text-danger mt-1">Saldo tidak cukup. Silakan pilih metode lain atau <a href="/user/deposit">deposit dulu</a>.</div>
+                <% } %>
+            </div>
+        </div>
+
+
+        <% const productGroups = [
+            { title: "Diamonds Umum", products: mlProductsData.diamonds, icon: "fa-gem" },
+            { title: "Starlight Member & Bundles", products: mlProductsData.starlight, icon: "fa-star" },
+            { title: "Weekly Diamond Pass", products: mlProductsData.weeklyPass, icon: "fa-calendar-week" },
+            { title: "Twilight Pass", products: mlProductsData.twilightPass, icon: "fa-moon" }
+           ]; 
+        %>
+
+        <% productGroups.forEach(group => { %>
+            <% if (group.products && group.products.length > 0) { %>
+                <div class="mb-5">
+                    <h3 class="mb-3 display-6 fs-4"><i class="fas <%= group.icon %> me-2 text-primary"></i><%= group.title %></h3>
+                    <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 row-cols-xl-5 g-3">
+                        <% group.products.forEach(item => { %>
+                            <div class="col">
+                                <div class="card h-100 product-ml-card shadow-hover">
+                                    <label class="card-body d-flex flex-column text-center radio-card-label p-3">
+                                        <input type="radio" name="productCodeMl" value="<%= item.code %>" class="form-check-input visually-hidden product-ml-radio" required
+                                               data-price="<%= item.price %>" data-name="<%= item.name %>">
+                                        <div class="fw-bold product-name fs-09"><%= item.name %></div>
+                                        <div class="price fw-bolder text-success my-2 fs-5">
+                                            Rp <%= item.price.toLocaleString('id-ID') %>
+                                        </div>
+                                        <div class="small text-muted product-note flex-grow-1 mb-2">
+                                            <small><%= item.note %></small>
+                                        </div>
+                                        <span class="btn btn-sm btn-outline-primary select-product-btn mt-auto py-2">Pilih</span>
+                                    </label>
+                                </div>
+                            </div>
+                        <% }) %>
+                    </div>
+                </div>
+            <% } %>
+        <% }) %>
+        
+        <% if (mlProductsData.diamonds.length === 0 && mlProductsData.starlight.length === 0 && mlProductsData.weeklyPass.length === 0 && mlProductsData.twilightPass.length === 0) { %>
+            <div class="col">
+                <p class="alert alert-warning text-center"><i class="fas fa-exclamation-circle me-2"></i>Produk Mobile Legends tidak tersedia saat ini atau gagal dimuat.</p>
+            </div>
+        <% } else { %>
+            <div class="sticky-bottom bg-light p-3 shadow-lg border-top" id="mlOrderFooter" style="display:none;">
+                <div class="container">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <div>
+                            Pilihan: <strong id="selectedProductName">-</strong><br>
+                            Harga: <strong id="selectedProductPrice" class="text-success">-</strong>
+                        </div>
+                        <button type="submit" class="btn btn-success btn-lg" id="submitMlOrderBtn" disabled>
+                            <i class="fas fa-paper-plane me-2"></i> Order Sekarang
+                        </button>
+                    </div>
+                </div>
+            </div>
+        <% } %>
+    </form>
+</div>
+
+<div class="modal fade" id="howToFindIdModal" tabindex="-1" aria-labelledby="howToFindIdModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="howToFindIdModalLabel"><i class="fas fa-question-circle me-2"></i>Cara Menemukan User ID & Zone ID Mobile Legends</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body">
+        <ol>
+            <li>Buka game Mobile Legends Anda.</li>
+            <li>Klik pada avatar profil Anda di pojok kiri atas layar.</li>
+            <li>User ID dan Zone ID (dalam kurung) akan terlihat di bawah nama profil Anda. Contoh: 12345678 (1234).</li>
+            <li>Masukkan User ID (angka sebelum kurung) dan Zone ID (angka di dalam kurung) ke form.</li>
+        </ol>
+        <img src="/images/ml_id_example.jpg" alt="Contoh ID Mobile Legends" class="img-fluid rounded"> 
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<style>
+    .product-ml-card { cursor: pointer; transition: all 0.2s ease-in-out; border: 2px solid var(--border-color); }
+    .product-ml-card.shadow-hover:hover { transform: translateY(-4px); box-shadow: 0 0.5rem 1rem rgba(0,0,0,.15)!important;}
+    .product-ml-radio:checked + .card-body { border-color: var(--primary-color); background-color: #f0effd; box-shadow: 0 0 0 0.2rem rgba(109, 91, 208, 0.45); }
+    .product-ml-radio:checked + .card-body .select-product-btn { background-color: var(--primary-color); color: white; border-color: var(--primary-color); font-weight: bold;}
+    .visually-hidden { position: absolute; width: 1px; height: 1px; margin: -1px; padding: 0; overflow: hidden; clip: rect(0, 0, 0, 0); border: 0; }
+    .product-name { min-height: 2.5em; display: flex; align-items: center; justify-content: center; }
+    .product-note { font-size: 0.75rem; line-height: 1.3; }
+    .radio-card-label { padding: 0.75rem; }
+    #mlOrderFooter { z-index: 1020; }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.getElementById('mlOrderForm');
+    const productRadios = form.querySelectorAll('.product-ml-radio');
+    const submitButton = document.getElementById('submitMlOrderBtn');
+    const mlOrderFooter = document.getElementById('mlOrderFooter');
+    const selectedProductNameEl = document.getElementById('selectedProductName');
+    const selectedProductPriceEl = document.getElementById('selectedProductPrice');
+    const userIdMlInput = document.getElementById('userIdMl');
+    const paymentMethodSelect = document.getElementById('payment_method_ml');
+
+
+    function checkFormValidity() {
+        let productSelected = false;
+        let selectedProductDetails = null;
+
+        productRadios.forEach(radio => {
+            if (radio.checked) {
+                productSelected = true;
+                selectedProductDetails = {
+                    name: radio.dataset.name,
+                    price: parseFloat(radio.dataset.price)
+                };
+            }
+        });
+        
+        let isUserIdValid = userIdMlInput && userIdMlInput.value.trim() !== '' && /^[0-9]+$/.test(userIdMlInput.value.trim());
+        let isPaymentValid = true;
+
+        if (paymentMethodSelect.value === 'balance') {
+            const currentUserBalance = parseFloat('<%= currentUser ? currentUser.balance : 0 %>');
+            if (selectedProductDetails && currentUserBalance < selectedProductDetails.price) {
+                isPaymentValid = false;
+            }
+        }
+        
+        if (productSelected && isUserIdValid && isPaymentValid) {
+            submitButton.disabled = false;
+            mlOrderFooter.style.display = 'block';
+            selectedProductNameEl.textContent = selectedProductDetails.name;
+            selectedProductPriceEl.textContent = 'Rp ' + selectedProductDetails.price.toLocaleString('id-ID');
+        } else {
+            submitButton.disabled = true;
+            mlOrderFooter.style.display = 'none';
+            selectedProductNameEl.textContent = '-';
+            selectedProductPriceEl.textContent = '-';
+        }
+    }
+
+    productRadios.forEach(radio => {
+        radio.addEventListener('change', checkFormValidity);
+    });
+    
+    if(userIdMlInput) {
+        userIdMlInput.addEventListener('input', checkFormValidity);
+    }
+    if(paymentMethodSelect){
+        paymentMethodSelect.addEventListener('change', checkFormValidity);
+    }
+
+    form.addEventListener('submit', function(event) {
+        if (!form.checkValidity()) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        form.classList.add('was-validated');
+        checkFormValidity(); // Re-check to enable/disable button
+        if (submitButton.disabled) {
+            event.preventDefault(); // Prevent submission if button is still disabled
+        }
+    }, false);
+
+    checkFormValidity();
+});
+</script>
+
+<%- include('../partials/footer') %>
